@@ -1,0 +1,6 @@
+.deck {
+  background-image: url('/card/deck.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top;
+}
