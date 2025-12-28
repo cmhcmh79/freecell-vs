@@ -44,14 +44,23 @@ export default function Lobby() {
   }
 
   // 랜덤 방 코드 생성
+  // const generateRoomCode = () => {
+  //   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  //   let code = ''
+  //   for (let i = 0; i < 6; i++) {
+  //     code += chars.charAt(Math.floor(Math.random() * chars.length))
+  //   }
+  //   return code
+  // }
+
   const generateRoomCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     let code = ''
     for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length))
+      code += Math.floor(Math.random() * 10) // 0~9
     }
     return code
   }
+
 
   // 방 만들기
   const createRoom = () => {
@@ -122,11 +131,13 @@ export default function Lobby() {
             방 코드 입력
           </label>
           <input
-            type="text"
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+            onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, ''))}
             onKeyPress={(e) => e.key === 'Enter' && joinRoom()}
-            placeholder="예: ABC123"
+            placeholder="예: 483920"
             maxLength={6}
             className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-2xl font-bold tracking-wider uppercase focus:border-green-500 focus:outline-none"
           />
