@@ -48,7 +48,7 @@ export default function Home() {
             onClick={() => router.push('/uitest')}
             className="rounded-xl border border-gray-300 py-3 text-gray-600 hover:bg-gray-100 transition"
           >
-            🧪 UI 테스트 9999 222 9999
+            🧪 UI 테스트 마지막 테스트
           </button>
         </div>
 
