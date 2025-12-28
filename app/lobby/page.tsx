@@ -94,12 +94,22 @@ export default function Lobby() {
             <p className="text-sm text-gray-500">환영합니다!</p>
             <p className="text-xl font-bold">{profile?.nickname || user?.email}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-600 hover:text-gray-800 underline"
-          >
-            로그아웃
-          </button>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push('/stats')}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              내 전적
+            </button>            
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
+            >
+              로그아웃
+            </button>
+
+          </div>
         </div>
 
         <h1 className="text-4xl font-bold text-center mb-2">프리셀 대전</h1>
