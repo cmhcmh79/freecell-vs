@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import DebugLogPanel from '@/components/DebugLogPanel'
+import { debugLogger } from '@/utils/debugLogger'
+
 
 export default function Lobby() {
   const router = useRouter()
@@ -132,6 +135,26 @@ export default function Lobby() {
           <p className="text-sm text-gray-500 text-center mt-2">
             방 코드가 자동으로 생성됩니다
           </p>
+        </div>
+
+        {/* 랭크 게임 */}
+        <div className="mb-3">
+          <button
+            onClick={() => router.push('/matchmaking')}
+            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
+          >
+            🏆 랭크 게임
+          </button>
+        </div>
+
+        {/* 솔로 모드 */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.push('/solo')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
+          >
+            🎯 솔로 모드
+          </button>
         </div>
 
         {/* 구분선 */}

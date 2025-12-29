@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import './FreeCellGame.css'
+import DebugLogPanel from '@/components/DebugLogPanel'
+import { debugLogger } from '@/utils/debugLogger'
+
 
 /* =====================
    Types
@@ -520,6 +523,10 @@ export default function FreeCellGame(props: Props) {
 
 
       </div>
+
+
+      {process.env.NODE_ENV !== 'production' && <DebugLogPanel />}
+
     </div>
   )
 }
