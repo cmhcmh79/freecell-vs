@@ -97,6 +97,12 @@ export default function Lobby() {
 
           <div className="flex gap-2">
             <button
+              onClick={() => router.push('/leaderboard')}
+              className="text-sm text-yellow-600 hover:text-yellow-800 underline"
+            >
+              🏆 리더보드
+            </button>            
+            <button
               onClick={() => router.push('/stats')}
               className="text-sm text-blue-600 hover:text-blue-800 underline"
             >
