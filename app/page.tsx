@@ -46,6 +46,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center p-4">
       <Auth />
+
+      <div style={{ position: 'fixed', bottom: 0 }}>
+        ENV: {process.env.NODE_ENV}
+      </div>
+
     </div>
   )
 }

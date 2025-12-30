@@ -7,6 +7,7 @@ import FreeCellGame from '@/components/FreeCellGame'
 import DebugLogPanel from '@/components/DebugLogPanel'
 import { debugLogger } from '@/utils/debugLogger'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { IS_DEV } from '@/config/env'
 
 type QueueUser = {
     user_id: string
@@ -410,6 +411,7 @@ export default function MatchmakingPage() {
             </div>
 
             {process.env.NODE_ENV !== 'production' && <DebugLogPanel />}
+            
         </div>
     )
 }
