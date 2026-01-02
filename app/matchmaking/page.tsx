@@ -410,8 +410,8 @@ export default function MatchmakingPage() {
                 )}
             </div>
 
-            {process.env.NODE_ENV !== 'production' && <DebugLogPanel />}
-            
+            {IS_DEV && <DebugLogPanel />}
+
         </div>
     )
 }

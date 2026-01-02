@@ -18,21 +18,21 @@ export default function Lobby() {
     // 로그인 확인
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/')
         return
       }
-      
+
       setUser(session.user)
-      
+
       // 프로필 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -104,13 +104,13 @@ export default function Lobby() {
               className="text-sm text-yellow-600 hover:text-yellow-800 underline"
             >
               🏆 리더보드
-            </button>            
+            </button>
             <button
               onClick={() => router.push('/stats')}
               className="text-sm text-blue-600 hover:text-blue-800 underline"
             >
               내 전적
-            </button>            
+            </button>
             <button
               onClick={handleLogout}
               className="text-sm text-gray-600 hover:text-gray-800 underline"
@@ -124,20 +124,7 @@ export default function Lobby() {
         <h1 className="text-4xl font-bold text-center mb-2">프리셀 대전</h1>
         <p className="text-center text-gray-600 mb-8">친구와 실시간 대결!</p>
 
-        {/* 방 만들기 */}
-        <div className="mb-6">
-          <button
-            onClick={createRoom}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
-          >
-            🎮 새 방 만들기
-          </button>
-          <p className="text-sm text-gray-500 text-center mt-2">
-            방 코드가 자동으로 생성됩니다
-          </p>
-        </div>
-
-        {/* 랭크 게임 */}
+        {/* 랭크 게임 (최상단) */}
         <div className="mb-3">
           <button
             onClick={() => router.push('/matchmaking')}
@@ -155,6 +142,19 @@ export default function Lobby() {
           >
             🎯 솔로 모드
           </button>
+        </div>
+
+        {/* 새 방 만들기 */}
+        <div className="mb-6">
+          <button
+            onClick={createRoom}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
+          >
+            🎮 새 방 만들기
+          </button>
+          <p className="text-sm text-gray-500 text-center mt-2">
+            방 코드가 자동으로 생성됩니다
+          </p>
         </div>
 
         {/* 구분선 */}
