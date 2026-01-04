@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import FreeCellGame from '@/components/FreeCellGame'
 
-const STAGES_PER_GROUP = 50
-const UNLOCK_PERCENTAGE = 0.8 // 80%
+const STAGES_PER_GROUP = 10
+const UNLOCK_PERCENTAGE = 0.8 // 80% (10개 중 8개)
 
 export default function RankedPage() {
   const router = useRouter()
@@ -14,7 +14,7 @@ export default function RankedPage() {
   const [profile, setProfile] = useState<any>(null)
   const [clearedStages, setClearedStages] = useState<number[]>([])
   const [displayStage, setDisplayStage] = useState(1)
-  const [maxAvailableStage, setMaxAvailableStage] = useState(50)
+  const [maxAvailableStage, setMaxAvailableStage] = useState(10)
   const [gameStarted, setGameStarted] = useState(false)
   const [gameStartTime, setGameStartTime] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -68,7 +68,7 @@ export default function RankedPage() {
       
       // 현재 그룹의 클리어 개수
       const clearedInGroup = cleared.filter(s => s >= groupStart && s <= groupEnd).length
-      const requiredClears = Math.ceil(STAGES_PER_GROUP * UNLOCK_PERCENTAGE)
+      const requiredClears = Math.ceil(STAGES_PER_GROUP * UNLOCK_PERCENTAGE) // 8개
       
       // 80% 이상 클리어했으면 다음 그룹 해금
       if (clearedInGroup >= requiredClears) {
@@ -81,6 +81,7 @@ export default function RankedPage() {
     return (currentGroup + 1) * STAGES_PER_GROUP
   }
 
+  // 1개씩 이동
   const handlePrevStage = () => {
     if (displayStage > 1) {
       setDisplayStage(displayStage - 1)
@@ -91,6 +92,17 @@ export default function RankedPage() {
     if (displayStage < maxAvailableStage) {
       setDisplayStage(displayStage + 1)
     }
+  }
+
+  // 10개씩 이동
+  const handlePrev10Stage = () => {
+    const newStage = Math.max(1, displayStage - 10)
+    setDisplayStage(newStage)
+  }
+
+  const handleNext10Stage = () => {
+    const newStage = Math.min(maxAvailableStage, displayStage + 10)
+    setDisplayStage(newStage)
   }
 
   const canPlayStage = (stageNum: number): boolean => {
@@ -277,30 +289,55 @@ export default function RankedPage() {
 
         {/* 스테이지 네비게이션 */}
         <div className="mb-6">
-          <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            {/* 10개씩 이전 */}
+            <button
+              onClick={handlePrev10Stage}
+              disabled={displayStage <= 10}
+              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-lg transition-colors"
+              title="10개 이전"
+            >
+              «
+            </button>
+            
+            {/* 1개씩 이전 */}
             <button
               onClick={handlePrevStage}
               disabled={displayStage === 1}
-              className="w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-2xl transition-colors"
+              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-xl transition-colors"
+              title="1개 이전"
             >
-              &lt;
+              ‹
             </button>
             
+            {/* 스테이지 번호 */}
             <div className="text-center flex-1">
               <div className="text-4xl font-bold text-gray-800">
                 {displayStage}
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-xs text-gray-500">
                 {isLocked ? '🔒 잠김' : `${currentGroupStart}-${Math.min(currentGroupEnd, maxAvailableStage)}`}
               </div>
             </div>
 
+            {/* 1개씩 다음 */}
             <button
               onClick={handleNextStage}
               disabled={displayStage >= maxAvailableStage}
-              className="w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-2xl transition-colors"
+              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-xl transition-colors"
+              title="1개 다음"
             >
-              &gt;
+              ›
+            </button>
+
+            {/* 10개씩 다음 */}
+            <button
+              onClick={handleNext10Stage}
+              disabled={displayStage >= maxAvailableStage - 9}
+              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-lg transition-colors"
+              title="10개 다음"
+            >
+              »
             </button>
           </div>
 
@@ -322,7 +359,7 @@ export default function RankedPage() {
             </div>
             {progressRate < 80 && (
               <p className="text-xs text-gray-600 mt-2 text-center">
-                80% 달성 시 다음 50개 스테이지 해금
+                80% (8개) 달성 시 다음 10개 스테이지 해금
               </p>
             )}
           </div>
@@ -387,7 +424,7 @@ export default function RankedPage() {
             💡 <strong>랭크 모드:</strong><br />
             • 스테이지 번호 = Seed 번호<br />
             • 처음 클리어 시 +1 RP 획득<br />
-            • 50개 구간의 80% 클리어 시 다음 해금
+            • 10개 구간의 80% (8개) 클리어 시 다음 해금
           </p>
         </div>
       </div>

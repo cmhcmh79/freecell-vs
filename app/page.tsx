@@ -15,26 +15,42 @@ export default function Home() {
   }, [])
 
   const checkUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data, error } = await supabase.auth.getUser()
 
-    if (session?.user) {
-      setUser(session.user)
+    if (data?.user) {
+      setUser(data.user)
+
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', data.user.id)
         .single()
+
       setProfile(profileData)
+    } else {
+      setUser(null)
+      setProfile(null)
     }
 
     setLoading(false)
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut({ scope: 'global' })
+
+    if (error) {
+      console.error('Logout error:', error)
+      return
+    }
+
+    // 상태 초기화
     setUser(null)
     setProfile(null)
+
+    // 홈으로 이동 (reload ❌)
+    router.replace('/')
   }
+
 
   const handleDisabledClick = (feature: string) => {
     alert(`${feature}은(는) 회원만 이용 가능합니다.\n로그인 후 이용해주세요!`)
@@ -102,11 +118,10 @@ export default function Home() {
               }
             }}
             disabled={!isLoggedIn}
-            className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors relative ${
-              isLoggedIn
+            className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors relative ${isLoggedIn
                 ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+              }`}
           >
             🏆 랭크 모드
             {!isLoggedIn && (
@@ -150,11 +165,10 @@ export default function Home() {
               }
             }}
             disabled={!isLoggedIn}
-            className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors relative ${
-              isLoggedIn
+            className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors relative ${isLoggedIn
                 ? 'bg-pink-600 hover:bg-pink-700 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+              }`}
           >
             📈 내 전적
             {!isLoggedIn && (
