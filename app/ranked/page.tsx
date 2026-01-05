@@ -5,24 +5,22 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import FreeCellGame from '@/components/FreeCellGame'
 
-const STAGES_PER_GROUP = 10
-const UNLOCK_PERCENTAGE = 0.8 // 80% (10개 중 8개)
-
 export default function RankedPage() {
   const router = useRouter()
   const [userId, setUserId] = useState('')
   const [profile, setProfile] = useState<any>(null)
-  const [clearedStages, setClearedStages] = useState<number[]>([])
   const [displayStage, setDisplayStage] = useState(1)
-  const [maxAvailableStage, setMaxAvailableStage] = useState(10)
   const [gameStarted, setGameStarted] = useState(false)
   const [gameStartTime, setGameStartTime] = useState(0)
   const [loading, setLoading] = useState(true)
 
+  const [lastClearedStage, setLastClearedStage] = useState(0)
+  const currentStage = lastClearedStage + 1
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         alert('랭크 모드는 회원만 이용 가능합니다.')
         router.push('/')
@@ -38,48 +36,21 @@ export default function RankedPage() {
         .single()
 
       setProfile(profileData)
-      
+
       if (profileData) {
-        const cleared = profileData.solo_cleared_stages || []
-        setClearedStages(cleared)
-        
-        // 최대 플레이 가능 스테이지 계산
-        const maxStage = calculateMaxAvailableStage(cleared)
-        setMaxAvailableStage(maxStage)
-        
-        // 마지막 클리어한 다음 스테이지로 이동
-        const maxCleared = cleared.length > 0 ? Math.max(...cleared) : 0
-        setDisplayStage(Math.min(maxCleared + 1, maxStage))
+
+        const last = profileData.solo_last_cleared_stage || 0
+        console.log('last:', last)
+        setLastClearedStage(last)
+        setDisplayStage(last + 1)
+
       }
-      
+
       setLoading(false)
     }
 
     checkAuth()
   }, [router])
-
-  const calculateMaxAvailableStage = (cleared: number[]): number => {
-    // 현재 완료된 그룹 확인
-    let currentGroup = 0
-    
-    while (true) {
-      const groupStart = currentGroup * STAGES_PER_GROUP + 1
-      const groupEnd = (currentGroup + 1) * STAGES_PER_GROUP
-      
-      // 현재 그룹의 클리어 개수
-      const clearedInGroup = cleared.filter(s => s >= groupStart && s <= groupEnd).length
-      const requiredClears = Math.ceil(STAGES_PER_GROUP * UNLOCK_PERCENTAGE) // 8개
-      
-      // 80% 이상 클리어했으면 다음 그룹 해금
-      if (clearedInGroup >= requiredClears) {
-        currentGroup++
-      } else {
-        break
-      }
-    }
-    
-    return (currentGroup + 1) * STAGES_PER_GROUP
-  }
 
   // 1개씩 이동
   const handlePrevStage = () => {
@@ -89,9 +60,7 @@ export default function RankedPage() {
   }
 
   const handleNextStage = () => {
-    if (displayStage < maxAvailableStage) {
-      setDisplayStage(displayStage + 1)
-    }
+    setDisplayStage(displayStage + 1)
   }
 
   // 10개씩 이동
@@ -101,31 +70,81 @@ export default function RankedPage() {
   }
 
   const handleNext10Stage = () => {
-    const newStage = Math.min(maxAvailableStage, displayStage + 10)
+    const newStage = displayStage + 10
     setDisplayStage(newStage)
   }
 
-  const canPlayStage = (stageNum: number): boolean => {
-    // 이미 클리어한 스테이지는 다시 플레이 불가
-    if (clearedStages.includes(stageNum)) {
-      return false
-    }
-    // 해금된 범위 내에서만 플레이 가능
-    return stageNum <= maxAvailableStage
+  const canPlayStage = (stage: number) => {
+    return stage === lastClearedStage + 1
   }
 
   const handleStageStart = () => {
     if (!canPlayStage(displayStage)) {
-      if (clearedStages.includes(displayStage)) {
+      if (displayStage <= lastClearedStage) {
         alert('이미 클리어한 스테이지입니다!')
+      } else if (displayStage < currentStage) {
+        alert('이미 지나간 스테이지입니다!')
       } else {
-        alert(`스테이지 ${displayStage}은(는) 아직 잠겨있습니다!\n이전 구간 80% 클리어 시 해금됩니다.`)
+        alert('아직 잠겨있는 스테이지입니다!')
       }
       return
     }
-    
+
     setGameStartTime(Date.now())
     setGameStarted(true)
+  }
+
+  const handleAdSkip = async () => {
+    if (displayStage !== currentStage) {
+      alert('현재 도전 가능한 스테이지만 스킵할 수 있습니다!')
+      return
+    }
+
+    if (!confirm(`광고를 보고 스테이지 ${displayStage}을(를) 클리어하시겠습니까?`)) {
+      return
+    }
+
+    alert('광고를 시청합니다... (준비 중)')
+
+    const clearedStage = currentStage
+    const newRating = (profile?.rating || 1000) + 1
+    const newAdViews = (profile?.total_ad_views || 0) + 1
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          solo_last_cleared_stage: clearedStage,
+          rating: newRating,
+          total_ad_views: newAdViews   // ✅ 여기
+        })
+        .eq('id', userId)
+
+      await supabase.from('game_results').insert({
+        room_code: `RANKED-AD-CLEAR-${clearedStage}`,
+        game_seed: clearedStage,
+        winner_id: userId,
+        loser_id: null,
+        winner_moves: 0,
+        loser_moves: 0,
+        duration_seconds: 0,
+        game_type: 'ad_clear'
+      })
+
+      // 프론트 상태 동기화
+      setLastClearedStage(clearedStage)
+      setDisplayStage(clearedStage + 1)
+      setProfile({
+        ...profile,
+        rating: newRating,
+        total_ad_views: newAdViews
+      })
+
+      alert(`🎉 스테이지 ${clearedStage} 클리어! +1 RP`)
+    } catch (err) {
+      console.error('저장 실패:', err)
+      alert('저장에 실패했습니다.')
+    }
   }
 
   const handleGameEnd = async (isWin: boolean) => {
@@ -136,30 +155,24 @@ export default function RankedPage() {
     }
 
     const durationSeconds = Math.floor((Date.now() - gameStartTime) / 1000)
-    
+
     // 클리어 처리
-    const newClearedStages = [...clearedStages, displayStage]
     const newRating = (profile?.rating || 1000) + 1
-
-    // 새로운 구간 해금 체크
-    const oldMaxStage = maxAvailableStage
-    const newMaxStage = calculateMaxAvailableStage(newClearedStages)
-    const unlockedNewGroup = newMaxStage > oldMaxStage
-
+    const newLastCleared = currentStage
     try {
       // DB에 저장
       await supabase
         .from('profiles')
         .update({
-          solo_cleared_stages: newClearedStages,
+          solo_last_cleared_stage: newLastCleared,
           rating: newRating
         })
         .eq('id', userId)
 
       // 게임 결과 기록
       await supabase.from('game_results').insert({
-        room_code: `RANKED-${displayStage}`,
-        game_seed: displayStage,
+        room_code: `RANKED-${currentStage}`,
+        game_seed: currentStage,
         winner_id: userId,
         loser_id: null,
         winner_moves: 0,
@@ -171,25 +184,12 @@ export default function RankedPage() {
       console.error('저장 실패:', err)
     }
 
-    setClearedStages(newClearedStages)
-    setMaxAvailableStage(newMaxStage)
     setProfile({ ...profile, rating: newRating })
-    
-    // 알림
-    if (unlockedNewGroup) {
-      alert(`🎉 스테이지 ${displayStage} 클리어! +1 RP\n\n🔓 새로운 구간 (${oldMaxStage + 1}-${newMaxStage})이 해금되었습니다!`)
-    } else {
-      alert(`🎉 스테이지 ${displayStage} 클리어! +1 RP`)
-    }
 
-    // 다음 미클리어 스테이지로 이동
-    let nextStage = displayStage + 1
-    while (nextStage <= newMaxStage && newClearedStages.includes(nextStage)) {
-      nextStage++
-    }
-    setDisplayStage(Math.min(nextStage, newMaxStage))
-
+    setLastClearedStage(newLastCleared)
+    setDisplayStage(newLastCleared + 1)
     setGameStarted(false)
+    alert(`🎉 스테이지 ${currentStage} 클리어! +1 RP`)
   }
 
   const getRankName = (rating: number) => {
@@ -213,8 +213,8 @@ export default function RankedPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900">
         <FreeCellGame
-          roomCode={`RANKED-${displayStage}`}
-          gameSeed={displayStage}
+          roomCode={`RANKED-${currentStage}`}
+          gameSeed={currentStage}
           isPlayer1={true}
           onWin={handleGameEnd}
         />
@@ -222,16 +222,10 @@ export default function RankedPage() {
     )
   }
 
-  const isCleared = clearedStages.includes(displayStage)
-  const isPlayable = canPlayStage(displayStage)
-  const isLocked = displayStage > maxAvailableStage
-
-  // 현재 구간 진행도
-  const currentGroupNum = Math.floor((displayStage - 1) / STAGES_PER_GROUP)
-  const currentGroupStart = currentGroupNum * STAGES_PER_GROUP + 1
-  const currentGroupEnd = (currentGroupNum + 1) * STAGES_PER_GROUP
-  const clearedInCurrentGroup = clearedStages.filter(s => s >= currentGroupStart && s <= currentGroupEnd).length
-  const progressRate = Math.round((clearedInCurrentGroup / STAGES_PER_GROUP) * 100)
+  const isCleared = displayStage <= lastClearedStage
+  const isCurrent = displayStage === lastClearedStage + 1
+  const isPast = displayStage < currentStage
+  const isFuture = displayStage > lastClearedStage + 1
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center p-4">
@@ -260,12 +254,12 @@ export default function RankedPage() {
             {profile?.rating || 1000} RP
           </div>
           <div className="text-sm text-gray-500 mt-2">
-            총 {clearedStages.length}개 클리어
+            {lastClearedStage}개 클리어
           </div>
         </div>
 
         {/* 매칭 게임 */}
-        <div className="mb-4">
+        <div className="mb-6">
           <button
             onClick={() => router.push('/matchmaking')}
             className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
@@ -275,16 +269,6 @@ export default function RankedPage() {
           <p className="text-xs text-gray-500 text-center mt-2">
             실시간 대전 | 승리 +10 RP, 패배 -10 RP
           </p>
-        </div>
-
-        {/* 광고 보기 */}
-        <div className="mb-6">
-          <button
-            onClick={() => alert('광고 기능은 준비 중입니다!')}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            📺 광고 보고 +10 포인트
-          </button>
         </div>
 
         {/* 스테이지 네비게이션 */}
@@ -299,7 +283,7 @@ export default function RankedPage() {
             >
               «
             </button>
-            
+
             {/* 1개씩 이전 */}
             <button
               onClick={handlePrevStage}
@@ -309,22 +293,23 @@ export default function RankedPage() {
             >
               ‹
             </button>
-            
+
             {/* 스테이지 번호 */}
             <div className="text-center flex-1">
               <div className="text-4xl font-bold text-gray-800">
                 {displayStage}
               </div>
               <div className="text-xs text-gray-500">
-                {isLocked ? '🔒 잠김' : `${currentGroupStart}-${Math.min(currentGroupEnd, maxAvailableStage)}`}
+                {isCurrent && '⭐ 도전 가능'}
+                {isPast && '✅ 클리어'}
+                {isFuture && '🔒 잠김'}
               </div>
             </div>
 
             {/* 1개씩 다음 */}
             <button
               onClick={handleNextStage}
-              disabled={displayStage >= maxAvailableStage}
-              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-xl transition-colors"
+              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-xl transition-colors"
               title="1개 다음"
             >
               ›
@@ -333,45 +318,20 @@ export default function RankedPage() {
             {/* 10개씩 다음 */}
             <button
               onClick={handleNext10Stage}
-              disabled={displayStage >= maxAvailableStage - 9}
-              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg font-bold text-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-lg transition-colors"
               title="10개 다음"
             >
               »
             </button>
           </div>
 
-          {/* 현재 구간 진행도 */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-gray-700">
-                현재 구간 ({currentGroupStart}-{currentGroupEnd})
-              </span>
-              <span className="text-sm font-bold text-blue-600">
-                {clearedInCurrentGroup}/{STAGES_PER_GROUP} ({progressRate}%)
-              </span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-500 transition-all duration-300"
-                style={{ width: `${progressRate}%` }}
-              />
-            </div>
-            {progressRate < 80 && (
-              <p className="text-xs text-gray-600 mt-2 text-center">
-                80% (8개) 달성 시 다음 10개 스테이지 해금
-              </p>
-            )}
-          </div>
-
           {/* 스테이지 정보 */}
-          <div className={`p-6 rounded-lg border-2 ${
-            isCleared
-              ? 'bg-green-50 border-green-400'
-              : isPlayable
+          <div className={`p-6 rounded-lg border-2 ${isCleared
+            ? 'bg-green-50 border-green-400'
+            : isCurrent
               ? 'bg-blue-50 border-blue-400'
               : 'bg-gray-100 border-gray-300'
-          }`}>
+            }`}>
             <div className="text-center mb-4">
               <h3 className="text-2xl font-bold text-gray-800 mb-2">
                 스테이지 {displayStage}
@@ -388,33 +348,53 @@ export default function RankedPage() {
               </div>
             )}
 
-            {!isCleared && isPlayable && (
+            {isCurrent && (
               <div className="text-center mb-4">
                 <span className="text-4xl">⭐</span>
                 <p className="text-sm text-blue-700 font-medium mt-2">도전 가능</p>
               </div>
             )}
 
-            {isLocked && (
+            {isFuture && (
               <div className="text-center mb-4">
                 <span className="text-4xl">🔒</span>
                 <p className="text-sm text-gray-600 font-medium mt-2">
-                  이전 구간 80% 클리어 필요
+                  이전 스테이지 클리어 필요
                 </p>
               </div>
             )}
 
-            <button
-              onClick={handleStageStart}
-              disabled={!isPlayable}
-              className={`w-full font-bold py-3 px-6 rounded-lg transition-colors ${
-                isPlayable
+            {isPast && !isCleared && (
+              <div className="text-center mb-4">
+                <span className="text-4xl">⏭️</span>
+                <p className="text-sm text-gray-600 font-medium mt-2">
+                  지나간 스테이지
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <button
+                onClick={handleStageStart}
+                disabled={!isCurrent}
+                className={`w-full font-bold py-3 px-6 rounded-lg transition-colors ${isCurrent
                   ? 'bg-green-600 hover:bg-green-700 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {isCleared ? '이미 클리어함' : isPlayable ? '게임 시작' : '플레이 불가'}
-            </button>
+                  }`}
+              >
+                {isCleared ? '이미 클리어함' : isCurrent ? '게임 시작' : '플레이 불가'}
+              </button>
+
+              {/* 광고 스킵 버튼 (현재 스테이지만) */}
+              {isCurrent && (
+                <button
+                  onClick={handleAdSkip}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  📺 광고 보고 스킵하기
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -422,9 +402,9 @@ export default function RankedPage() {
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <p className="text-sm text-gray-700">
             💡 <strong>랭크 모드:</strong><br />
-            • 스테이지 번호 = Seed 번호<br />
-            • 처음 클리어 시 +1 RP 획득<br />
-            • 10개 구간의 80% (8개) 클리어 시 다음 해금
+            • 스테이지를 순서대로 클리어하세요<br />
+            • 클리어 시 +1 RP 획득<br />
+            • 광고 스킵 시 RP 없음 (다음 스테이지만 해금)
           </p>
         </div>
       </div>

@@ -7,11 +7,9 @@ import { supabase } from '@/lib/supabase'
 type LeaderboardEntry = {
   id: string
   nickname: string
-  wins: number
-  losses: number
-  total_games: number
-  win_rate: number
-  avg_moves_when_win: number
+  rating: number
+  solo_last_cleared_stage: number
+  total_ad_views: number
 }
 
 export default function LeaderboardPage() {
@@ -28,11 +26,12 @@ export default function LeaderboardPage() {
     setLoading(true)
 
     const { data } = await supabase
-      .from('user_stats')
-      .select('*')
-      .gte('total_games', 1)  // 최소 1게임 이상 한 사람만
-      .order(sortBy, { ascending: false })
-      .limit(50)
+      .from('profiles')
+  .select('id, nickname, rating, solo_last_cleared_stage, total_ad_views')
+  .order('rating', { ascending: false })
+  .order('solo_last_cleared_stage', { ascending: false })
+  .order('total_ad_views', { ascending: false })
+  .limit(50)
 
     setLeaderboard(data || [])
     setLoading(false)
@@ -114,11 +113,9 @@ export default function LeaderboardPage() {
                   <tr className="border-b-2 border-gray-300">
                     <th className="py-3 px-2 text-left">순위</th>
                     <th className="py-3 px-2 text-left">닉네임</th>
-                    <th className="py-3 px-2 text-center">승률</th>
-                    <th className="py-3 px-2 text-center">승</th>
-                    <th className="py-3 px-2 text-center">패</th>
-                    <th className="py-3 px-2 text-center">총 게임</th>
-                    <th className="py-3 px-2 text-center">평균 이동</th>
+                    <th className="py-3 px-2 text-center">rating</th>
+                    <th className="py-3 px-2 text-center">solo_last_cleared_stage</th>
+                    <th className="py-3 px-2 text-center">total_ad_views</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -136,19 +133,13 @@ export default function LeaderboardPage() {
                         {entry.nickname || '익명'}
                       </td>
                       <td className="py-3 px-2 text-center font-bold text-yellow-600">
-                        {entry.win_rate}%
+                        {entry.rating}%
                       </td>
                       <td className="py-3 px-2 text-center text-green-600 font-bold">
-                        {entry.wins}
+                        {entry.solo_last_cleared_stage}
                       </td>
                       <td className="py-3 px-2 text-center text-red-600">
-                        {entry.losses}
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        {entry.total_games}
-                      </td>
-                      <td className="py-3 px-2 text-center text-blue-600">
-                        {entry.avg_moves_when_win || '-'}
+                        {entry.total_ad_views}
                       </td>
                     </tr>
                   ))}
