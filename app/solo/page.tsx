@@ -120,9 +120,6 @@ export default function SoloPage() {
           >
             🎲 랜덤 플레이
           </button>
-          <p className="text-xs text-gray-500 text-center mt-2">
-            무작위 카드 배치로 게임을 시작합니다
-          </p>
         </div>
 
         {/* 구분선 */}
@@ -154,48 +151,6 @@ export default function SoloPage() {
               시작
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            💡 같은 번호는 항상 같은 카드 배치입니다
-          </p>
-        </div>
-
-        {/* 안내 */}
-        {!isLoggedIn && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800 text-center">
-              ℹ️ 비회원도 플레이 가능<br />
-              (기록은 회원만 저장됩니다)
-            </p>
-            <button
-              onClick={() => router.push('/login')}
-              className="w-full mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium underline"
-            >
-              회원가입하고 기록 저장하기 →
-            </button>
-          </div>
-        )}
-
-        {/* 설명 */}
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-700">
-            💡 <strong>솔로 모드:</strong><br />
-            • <strong>랜덤 플레이:</strong> 매번 다른 게임<br />
-            • <strong>특정 번호:</strong> 원하는 배치로 플레이<br />
-            • 친구와 같은 번호로 도전해보세요!
-          </p>
-        </div>
-
-        {/* 랭크 모드 안내 */}
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800 text-center">
-            🏆 <strong>스테이지 도전은 랭크 모드에서!</strong>
-          </p>
-          <button
-            onClick={() => router.push('/ranked')}
-            className="w-full mt-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 rounded-lg transition-colors"
-          >
-            랭크 모드로 가기 →
-          </button>
         </div>
       </div>
     </div>
