@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 type LeaderboardEntry = {
   id: string
   nickname: string
-  rating: number
+  rp: number
   solo_last_cleared_stage: number
   total_ad_views: number
 }
@@ -16,7 +16,7 @@ export default function LeaderboardPage() {
   const router = useRouter()
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState<'win_rate' | 'wins' | 'total_games'>('win_rate')
+  const [sortBy, setSortBy] = useState<'rp' | 'solo_last_cleared_stage' | 'total_ad_views'>('rp')
 
   useEffect(() => {
     loadLeaderboard()
@@ -25,13 +25,17 @@ export default function LeaderboardPage() {
   const loadLeaderboard = async () => {
     setLoading(true)
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-  .select('id, nickname, rating, solo_last_cleared_stage, total_ad_views')
-  .order('rating', { ascending: false })
-  .order('solo_last_cleared_stage', { ascending: false })
-  .order('total_ad_views', { ascending: false })
-  .limit(50)
+      .select('id, nickname, rp, solo_last_cleared_stage, total_ad_views')
+      .order(sortBy, { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('Leaderboard 로드 에러:', error)
+    } else {
+      console.log('Leaderboard 데이터:', data)
+    }
 
     setLeaderboard(data || [])
     setLoading(false)
@@ -70,34 +74,34 @@ export default function LeaderboardPage() {
           {/* 정렬 버튼 */}
           <div className="flex justify-center gap-2 mb-6">
             <button
-              onClick={() => setSortBy('win_rate')}
+              onClick={() => setSortBy('rp')}
               className={`px-4 py-2 rounded-lg font-bold transition ${
-                sortBy === 'win_rate'
+                sortBy === 'rp'
                   ? 'bg-yellow-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              승률 순
+              RP 순
             </button>
             <button
-              onClick={() => setSortBy('wins')}
+              onClick={() => setSortBy('solo_last_cleared_stage')}
               className={`px-4 py-2 rounded-lg font-bold transition ${
-                sortBy === 'wins'
+                sortBy === 'solo_last_cleared_stage'
                   ? 'bg-green-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              승리 순
+              Stage 순
             </button>
             <button
-              onClick={() => setSortBy('total_games')}
+              onClick={() => setSortBy('total_ad_views')}
               className={`px-4 py-2 rounded-lg font-bold transition ${
-                sortBy === 'total_games'
+                sortBy === 'total_ad_views'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              게임 수 순
+              광고 시청 순
             </button>
           </div>
 
@@ -113,9 +117,9 @@ export default function LeaderboardPage() {
                   <tr className="border-b-2 border-gray-300">
                     <th className="py-3 px-2 text-left">순위</th>
                     <th className="py-3 px-2 text-left">닉네임</th>
-                    <th className="py-3 px-2 text-center">rating</th>
-                    <th className="py-3 px-2 text-center">solo_last_cleared_stage</th>
-                    <th className="py-3 px-2 text-center">total_ad_views</th>
+                    <th className="py-3 px-2 text-center">RP</th>
+                    <th className="py-3 px-2 text-center">최고 Stage</th>
+                    <th className="py-3 px-2 text-center">광고 시청</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,12 +137,12 @@ export default function LeaderboardPage() {
                         {entry.nickname || '익명'}
                       </td>
                       <td className="py-3 px-2 text-center font-bold text-yellow-600">
-                        {entry.rating}%
+                        {entry.rp}
                       </td>
                       <td className="py-3 px-2 text-center text-green-600 font-bold">
                         {entry.solo_last_cleared_stage}
                       </td>
-                      <td className="py-3 px-2 text-center text-red-600">
+                      <td className="py-3 px-2 text-center text-blue-600">
                         {entry.total_ad_views}
                       </td>
                     </tr>
