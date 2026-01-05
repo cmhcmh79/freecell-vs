@@ -24,42 +24,58 @@ export default function LoginPage() {
     checkAuth()
   }, [router])
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage('')
 
-    try {
-      // 1. 회원가입
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
+/* ======================
+   회원가입
+====================== */
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+  setMessage('')
 
-      if (authError) throw authError
+  try {
+    // [추가] 닉네임 중복 체크
+    const { data: existingNickname, error: nickError } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('nickname', nickname)
+      .single()
 
-      // 2. 닉네임 업데이트
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ nickname })
-          .eq('id', authData.user.id)
-
-        if (profileError) throw profileError
-      }
-
-      setMessage('회원가입 성공! 이메일을 확인해주세요.')
-      
-      // 3초 후 메인으로 이동
-      setTimeout(() => {
-        router.push('/')
-      }, 3000)
-    } catch (error: any) {
-      setMessage(error.message)
-    } finally {
-      setLoading(false)
+    if (existingNickname) {
+      throw new Error('이미 사용 중인 닉네임입니다.')
     }
+
+    // 1. Auth 회원가입
+    const { data: authData, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nickname: nickname
+        }
+      }
+    })
+
+    if (error) {
+      // [추가] 이메일 중복 에러 처리
+      if (error.message.includes('already registered')) {
+        throw new Error('이미 가입된 이메일 주소입니다.')
+      }
+      throw error
+    }
+
+    if (!authData.user) throw new Error('유저 생성 실패')
+
+    setMessage('회원가입 성공! 이메일 인증을 완료해주세요.')
+    setTimeout(() => { router.push('/') }, 3000)
+
+  } catch (err: any) {
+    // 한국어 메시지로 변환하여 사용자에게 보여줌
+    setMessage(err.message)
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,7 +91,7 @@ export default function LoginPage() {
       if (error) throw error
 
       setMessage('로그인 성공!')
-      
+
       // 메인으로 이동
       router.push('/')
     } catch (error: any) {
@@ -160,11 +176,10 @@ export default function LoginPage() {
           )}
 
           {message && (
-            <div className={`text-sm p-3 rounded-lg ${
-              message.includes('성공') 
-                ? 'bg-green-100 text-green-700' 
+            <div className={`text-sm p-3 rounded-lg ${message.includes('성공')
+                ? 'bg-green-100 text-green-700'
                 : 'bg-red-100 text-red-700'
-            }`}>
+              }`}>
               {message}
             </div>
           )}
