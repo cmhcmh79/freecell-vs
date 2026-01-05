@@ -39,12 +39,26 @@ export default function VersusPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
 
+        {/* 헤더 */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">뒤로가기</span>
+          </button>
+        </div>
+
+
         {/* 제목 */}
         <h1 className="text-4xl font-bold text-center mb-2">
           프리셀 대전
         </h1>
         <p className="text-center text-gray-600 mb-8">
-          친구와 실시간 대결!
+          
         </p>
 
         {/* 새 방 만들기 */}
@@ -55,9 +69,7 @@ export default function VersusPage() {
           >
             🎮 새 방 만들기
           </button>
-          <p className="text-sm text-gray-500 text-center mt-2">
-            6자리 방 코드가 자동 생성됩니다
-          </p>
+
         </div>
 
         {/* 구분선 */}
@@ -106,13 +118,6 @@ export default function VersusPage() {
           </p>
         </div>
 
-        {/* 뒤로가기 */}
-        <button
-          onClick={() => router.push('/')}
-          className="w-full mt-6 text-sm text-gray-500 hover:text-gray-700 underline"
-        >
-          메인으로 돌아가기
-        </button>
       </div>
     </div>
   )

@@ -18,7 +18,7 @@ export default function Room() {
 
   const [users, setUsers] = useState<User[]>([])
   const [myId] = useState(() => Math.random().toString(36).substring(7))
-  const [myUserId, setMyUserId] = useState<string>('')
+  // const [myUserId, setMyUserId] = useState<string>('')
   const [isReady, setIsReady] = useState(false)
   const [gameStarted, setGameStarted] = useState(false)
   const [gameSeed, setGameSeed] = useState<number | null>(null)
@@ -29,11 +29,11 @@ export default function Room() {
     // 현재 로그인 사용자 확인
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
-        router.push('/')
-        return
-      }
-      setMyUserId(session.user.id)
+      // if (!session?.user) {
+      //   router.push('/')
+      //   return
+      // }
+      // setMyUserId(session.user.id)
     }
     checkAuth()
 
@@ -70,8 +70,7 @@ export default function Room() {
         if (status === 'SUBSCRIBED') {
           await channel.track({
             user_id: myId,
-            ready: false,
-            supabase_user_id: myUserId ?? null
+            ready: false
           })
         }
       })
@@ -88,8 +87,7 @@ export default function Room() {
     const channel = supabase.channel(`room-${roomCode}`)
     await channel.track({
       user_id: myId,
-      ready: newReady,
-      supabase_user_id: myUserId
+      ready: newReady
     })
 
     // 2명 모두 준비 완료 시 게임 시작
@@ -120,35 +118,35 @@ export default function Room() {
   const handleGameEnd = async (isMe: boolean) => {
     console.log("handleGameEnd called with isMe")
     
-    const durationSeconds = Math.floor((Date.now() - gameStartTime) / 1000)
+    // const durationSeconds = Math.floor((Date.now() - gameStartTime) / 1000)
     
     // 상대방 찾기
-    const opponent = users.find(u => u.id !== myId)
-    if (!opponent || !gameSeed) return
+    // const opponent = users.find(u => u.id !== myId)
+    // if (!opponent || !gameSeed) return
 
-    // 게임 결과 저장 (승자만 저장 - 중복 방지)
-    if (isMe) {
-      try {
-        const { error } = await supabase.from('game_results').insert({
-          room_code: roomCode,
-          game_seed: gameSeed,
-          winner_id: myUserId,
-          loser_id: opponent.userId,
-          winner_moves: 0,  // TODO: 실제 이동 횟수로 교체
-          loser_moves: 0,   // TODO: 실제 이동 횟수로 교체
-          duration_seconds: durationSeconds
-        })
+    // // 게임 결과 저장 (승자만 저장 - 중복 방지)
+    // if (isMe) {
+    //   try {
+    //     const { error } = await supabase.from('game_results').insert({
+    //       room_code: roomCode,
+    //       game_seed: gameSeed,
+    //       winner_id: myUserId,
+    //       loser_id: opponent.userId,
+    //       winner_moves: 0,  // TODO: 실제 이동 횟수로 교체
+    //       loser_moves: 0,   // TODO: 실제 이동 횟수로 교체
+    //       duration_seconds: durationSeconds
+    //     })
 
-        if (error) {
-          console.error('결과 저장 실패:', error)
-        }
-      } catch (err) {
-        console.error('결과 저장 오류:', err)
-      }
-    }
+    //     if (error) {
+    //       console.error('결과 저장 실패:', error)
+    //     }
+    //   } catch (err) {
+    //     console.error('결과 저장 오류:', err)
+    //   }
+    // }
 
     alert(isMe ? '🎉 승리!' : '😢 패배...')
-    router.push('/lobby')
+    router.push('/versus')
   }
 
 
@@ -170,6 +168,31 @@ export default function Room() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
+
+
+{/* 헤더 */}
+<div className="mb-6">
+  <button
+    onClick={() => router.back()}
+    className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+  >
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 19l-7-7 7-7"
+      />
+    </svg>
+    <span className="text-sm font-medium">뒤로가기</span>
+  </button>
+</div>
+
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold mb-2">대기실</h1>
           <div className="inline-block bg-gray-100 px-6 py-2 rounded-lg">
@@ -233,26 +256,13 @@ export default function Room() {
             {isReady ? '준비 취소' : '준비 완료'}
           </button>
 
-          <button
-            onClick={leaveRoom}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors"
-          >
-            방 나가기
-          </button>
-        </div>
 
-        {/* 안내 */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            💡 친구에게 방 코드 <strong>{roomCode}</strong>를 알려주세요!
-          </p>
         </div>
 
         {/* 안내 */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
             myId : {myId}<br/>
-            myUserId : {myUserId}<br/>
             roomCode : {roomCode}<br/>
             gameSeed : {gameSeed}<br/>
             gameStartTime : {gameStartTime}<br/>
