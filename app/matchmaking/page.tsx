@@ -12,7 +12,7 @@ import { IS_DEV } from '@/config/env'
 type QueueUser = {
     user_id: string
     nickname: string
-    rating: number
+    rp: number
     joined_at: number
 }
 
@@ -20,7 +20,7 @@ export default function MatchmakingPage() {
     const router = useRouter()
     const [inQueue, setInQueue] = useState(false)
     const [queueTime, setQueueTime] = useState(0)
-    const [myRating, setMyRating] = useState(0)
+    const [myRp, setMyRp] = useState(0)
     const [myNickname, setMyNickname] = useState('')
     const [userId, setUserId] = useState('')
 
@@ -37,7 +37,7 @@ export default function MatchmakingPage() {
 
     const gameChannelRef = useRef<RealtimeChannel | null>(null)
     const gameChannelReadyRef = useRef(false)
-
+    const autoJoinedRef = useRef(false)
 
     useEffect(() => {
         const init = async () => {
@@ -51,16 +51,25 @@ export default function MatchmakingPage() {
 
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('rating, nickname')
+                .select('rp, nickname')
                 .eq('id', session.user.id)
                 .single()
 
-            setMyRating(profile?.rating || 1000)
+            setMyRp(profile?.rp || 1000)
             setMyNickname(profile?.nickname || '')
         }
 
         init()
     }, [router])
+
+    useEffect(() => {
+        if (!userId) return
+        if (autoJoinedRef.current) return
+
+        autoJoinedRef.current = true
+        joinQueue()
+    }, [userId])
+
 
     useEffect(() => {
         if (!inQueue || !userId || matchedRef.current) return
@@ -77,7 +86,7 @@ export default function MatchmakingPage() {
                     users.push({
                         user_id: presence.user_id,
                         nickname: presence.nickname,
-                        rating: presence.rating,
+                        rp: presence.rp,
                         joined_at: presence.joined_at
                     })
                 })
@@ -97,7 +106,7 @@ export default function MatchmakingPage() {
                     await channel.track({
                         user_id: userId,
                         nickname: myNickname,
-                        rating: myRating,
+                        rp: myRp,
                         joined_at: Date.now()
                     })
                 }
@@ -111,7 +120,7 @@ export default function MatchmakingPage() {
             supabase.removeChannel(channel)
             clearInterval(timer)
         }
-    }, [inQueue, userId, myRating, myNickname])
+    }, [inQueue, userId, myRp, myNickname])
 
     // 게임 중 game-over 이벤트 리스닝
     useEffect(() => {
@@ -137,7 +146,7 @@ export default function MatchmakingPage() {
             .subscribe((status) => {
                 console.log('Game channel status:', status)
                 if (status === 'SUBSCRIBED') {
-                    gameChannelReadyRef.current = true   // ✅ 여기서만!
+                    gameChannelReadyRef.current = true
                 }
             })
 
@@ -157,7 +166,7 @@ export default function MatchmakingPage() {
         if (others.length === 0) return
 
         const sorted = others.sort((a, b) =>
-            Math.abs(a.rating - myRating) - Math.abs(b.rating - myRating)
+            Math.abs(a.rp - myRp) - Math.abs(b.rp - myRp)
         )
 
         const opponent = sorted[0]
@@ -243,50 +252,50 @@ export default function MatchmakingPage() {
                 // 내 점수 +10
                 const { data: myProfile } = await supabase
                     .from('profiles')
-                    .select('rating')
+                    .select('rp')
                     .eq('id', userId)
                     .single()
 
-                const newRating = (myProfile?.rating || 1000) + 10
+                const newRp = (myProfile?.rp || 1000) + 10
 
                 await supabase
                     .from('profiles')
-                    .update({ rating: newRating })
+                    .update({ rp: newRp })
                     .eq('id', userId)
 
                 await supabase.from('rating_history').insert({
                     user_id: userId,
                     game_type: 'pvp',
                     rating_change: 10,
-                    old_rating: myProfile?.rating || 1000,
-                    new_rating: newRating,
+                    old_rating: myProfile?.rp || 1000,
+                    new_rating: newRp,
                     game_result_id: gameResult.id
                 })
 
                 // 상대 점수 -10
                 const { data: oppProfile } = await supabase
                     .from('profiles')
-                    .select('rating')
+                    .select('rp')
                     .eq('id', opponentId)
                     .single()
 
-                const oppNewRating = Math.max(0, (oppProfile?.rating || 1000) - 10)
+                const oppNewRp = Math.max(0, (oppProfile?.rp || 1000) - 10)
 
                 await supabase
                     .from('profiles')
-                    .update({ rating: oppNewRating })
+                    .update({ rp: oppNewRp })
                     .eq('id', opponentId)
 
                 await supabase.from('rating_history').insert({
                     user_id: opponentId,
                     game_type: 'pvp',
                     rating_change: -10,
-                    old_rating: oppProfile?.rating || 1000,
-                    new_rating: oppNewRating,
+                    old_rating: oppProfile?.rp || 1000,
+                    new_rating: oppNewRp,
                     game_result_id: gameResult.id
                 })
 
-                alert(`🎉 승리! +10 RP (${myProfile?.rating} → ${newRating})`)
+                alert(`🎉 승리! +10 RP (${myProfile?.rp} → ${newRp})`)
             } catch (err) {
                 console.error('결과 저장 실패:', err)
                 alert('🎉 승리!')
@@ -295,20 +304,20 @@ export default function MatchmakingPage() {
             // 패배
             const { data: myProfile } = await supabase
                 .from('profiles')
-                .select('rating')
+                .select('rp')
                 .eq('id', userId)
                 .single()
 
-            const oldRating = myProfile?.rating || 1000
-            const newRating = Math.max(0, oldRating - 10)
+            const oldRp = myProfile?.rp || 1000
+            const newRp = Math.max(0, oldRp - 10)
 
-            alert(`😢 패배... -10 RP (${oldRating} → ${newRating})`)
+            alert(`😢 패배... -10 RP (${oldRp} → ${newRp})`)
         }
 
         if (isMe) {
-            setTimeout(() => router.push('/lobby'), 2000)
+            setTimeout(() => router.push('/ranked'), 2000)
         } else {
-            router.push('/lobby')
+            router.push('/ranked')
         }
 
     }
@@ -327,12 +336,12 @@ export default function MatchmakingPage() {
         matchedRef.current = false
     }
 
-    const getRankName = (rating: number) => {
-        if (rating >= 2000) return '🏆 그랜드마스터'
-        if (rating >= 1800) return '💎 다이아몬드'
-        if (rating >= 1600) return '💠 플래티넘'
-        if (rating >= 1400) return '🥇 골드'
-        if (rating >= 1200) return '🥈 실버'
+    const getRankName = (rp: number) => {
+        if (rp >= 2000) return '🏆 그랜드마스터'
+        if (rp >= 1800) return '💎 다이아몬드'
+        if (rp >= 1600) return '💍 플래티넘'
+        if (rp >= 1400) return '🥇 골드'
+        if (rp >= 1200) return '🥈 실버'
         return '🥉 브론즈'
     }
 
@@ -353,12 +362,16 @@ export default function MatchmakingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
-                <div className="mb-4">
+                {/* 헤더 */}
+                <div className="mb-6">
                     <button
-                        onClick={() => router.push('/lobby')}
-                        className="text-gray-600 hover:underline"
+                        onClick={() => router.push('/ranked')}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
                     >
-                        ← 뒤로 가기
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="text-sm font-medium">뒤로가기</span>
                     </button>
                 </div>
 
@@ -366,8 +379,8 @@ export default function MatchmakingPage() {
 
                 <div className="mb-6 p-4 bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-lg">
                     <div className="text-center">
-                        <div className="text-2xl font-bold mb-2">{getRankName(myRating)}</div>
-                        <div className="text-3xl font-bold text-yellow-700">{myRating} RP</div>
+                        <div className="text-2xl font-bold mb-2">{getRankName(myRp)}</div>
+                        <div className="text-3xl font-bold text-yellow-700">{myRp} RP</div>
                         <div className="text-sm text-gray-600 mt-1">{myNickname}</div>
                     </div>
                 </div>
@@ -378,17 +391,9 @@ export default function MatchmakingPage() {
                             onClick={joinQueue}
                             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors mb-4"
                         >
-                            🎮 랭크 게임 시작
+                            상대 찾기
                         </button>
 
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-sm text-blue-800">
-                                💡 <strong>랭크 시스템:</strong><br />
-                                • 승리: +10 RP<br />
-                                • 패배: -10 RP<br />
-                                • 비슷한 레이팅의 상대와 매칭됩니다
-                            </p>
-                        </div>
                     </>
                 ) : (
                     <>
@@ -415,6 +420,3 @@ export default function MatchmakingPage() {
         </div>
     )
 }
-
-
-

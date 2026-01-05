@@ -38,12 +38,10 @@ export default function RankedPage() {
       setProfile(profileData)
 
       if (profileData) {
-
         const last = profileData.solo_last_cleared_stage || 0
         console.log('last:', last)
         setLastClearedStage(last)
         setDisplayStage(last + 1)
-
       }
 
       setLoading(false)
@@ -107,7 +105,7 @@ export default function RankedPage() {
     alert('광고를 시청합니다... (준비 중)')
 
     const clearedStage = currentStage
-    const newRating = (profile?.rating || 1000) + 1
+    const newRp = (profile?.rp || 1000) + 1
     const newAdViews = (profile?.total_ad_views || 0) + 1
 
     try {
@@ -115,8 +113,8 @@ export default function RankedPage() {
         .from('profiles')
         .update({
           solo_last_cleared_stage: clearedStage,
-          rating: newRating,
-          total_ad_views: newAdViews   // ✅ 여기
+          rp: newRp,
+          total_ad_views: newAdViews
         })
         .eq('id', userId)
 
@@ -136,7 +134,7 @@ export default function RankedPage() {
       setDisplayStage(clearedStage + 1)
       setProfile({
         ...profile,
-        rating: newRating,
+        rp: newRp,
         total_ad_views: newAdViews
       })
 
@@ -157,7 +155,7 @@ export default function RankedPage() {
     const durationSeconds = Math.floor((Date.now() - gameStartTime) / 1000)
 
     // 클리어 처리
-    const newRating = (profile?.rating || 1000) + 1
+    const newRp = (profile?.rp || 1000) + 1
     const newLastCleared = currentStage
     try {
       // DB에 저장
@@ -165,7 +163,7 @@ export default function RankedPage() {
         .from('profiles')
         .update({
           solo_last_cleared_stage: newLastCleared,
-          rating: newRating
+          rp: newRp
         })
         .eq('id', userId)
 
@@ -184,7 +182,7 @@ export default function RankedPage() {
       console.error('저장 실패:', err)
     }
 
-    setProfile({ ...profile, rating: newRating })
+    setProfile({ ...profile, rp: newRp })
 
     setLastClearedStage(newLastCleared)
     setDisplayStage(newLastCleared + 1)
@@ -192,12 +190,12 @@ export default function RankedPage() {
     alert(`🎉 스테이지 ${currentStage} 클리어! +1 RP`)
   }
 
-  const getRankName = (rating: number) => {
-    if (rating >= 2000) return '🏆 그랜드마스터'
-    if (rating >= 1800) return '💎 다이아몬드'
-    if (rating >= 1600) return '💠 플래티넘'
-    if (rating >= 1400) return '🥇 골드'
-    if (rating >= 1200) return '🥈 실버'
+  const getRankName = (rp: number) => {
+    if (rp >= 2000) return '🏆 그랜드마스터'
+    if (rp >= 1800) return '💎 다이아몬드'
+    if (rp >= 1600) return '💍 플래티넘'
+    if (rp >= 1400) return '🥇 골드'
+    if (rp >= 1200) return '🥈 실버'
     return '🥉 브론즈'
   }
 
@@ -248,10 +246,10 @@ export default function RankedPage() {
           <div className="text-5xl mb-3">🏆</div>
           <h2 className="text-2xl font-bold mb-2">{profile?.nickname || '플레이어'}</h2>
           <div className="text-lg font-semibold text-gray-600 mb-1">
-            {getRankName(profile?.rating || 1000)}
+            {getRankName(profile?.rp || 1000)}
           </div>
           <div className="text-3xl font-bold text-yellow-600">
-            {profile?.rating || 1000} RP
+            {profile?.rp || 1000} RP
           </div>
           <div className="text-sm text-gray-500 mt-2">
             {lastClearedStage}개 클리어
@@ -366,7 +364,7 @@ export default function RankedPage() {
 
             {isPast && !isCleared && (
               <div className="text-center mb-4">
-                <span className="text-4xl">⏭️</span>
+                <span className="text-4xl">⭕️</span>
                 <p className="text-sm text-gray-600 font-medium mt-2">
                   지나간 스테이지
                 </p>
