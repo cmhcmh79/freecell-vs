@@ -119,8 +119,8 @@ export default function Home() {
             }}
             disabled={!isLoggedIn}
             className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors relative ${isLoggedIn
-                ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
           >
             🏆 랭크 모드
@@ -144,7 +144,7 @@ export default function Home() {
             onClick={() => router.push('/versus')}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
           >
-            👥 친구와 대결
+            👥 친구 대결
           </button>
 
           {/* 랭킹 */}
@@ -152,32 +152,37 @@ export default function Home() {
             onClick={() => router.push('/leaderboard')}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
           >
-            📊 랭킹
+            📊 랭{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}킹
           </button>
 
-          {/* 내 전적 */}
+
+          {/* 설정 */}
           <button
             onClick={() => {
               if (isLoggedIn) {
-                router.push('/stats')
+                router.push('/settings')
               } else {
-                handleDisabledClick('내 전적')
+                handleDisabledClick('설정')
               }
             }}
             disabled={!isLoggedIn}
             className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors relative ${isLoggedIn
-                ? 'bg-pink-600 hover:bg-pink-700 text-white'
+                ? 'bg-gray-700 hover:bg-gray-800 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
           >
-            📈 내 전적
+            ⚙️ 설{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}{"\u00A0"}정
             {!isLoggedIn && (
               <span className="absolute top-2 right-2 text-xs bg-red-500 text-white px-2 py-1 rounded">
                 회원 전용
               </span>
             )}
           </button>
+
         </div>
+
+
+
 
         {/* 안내 */}
         {!isLoggedIn && (
