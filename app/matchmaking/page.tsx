@@ -352,6 +352,7 @@ export default function MatchmakingPage() {
                 <FreeCellGame
                     roomCode={roomCode}
                     gameSeed={gameSeed}
+                    gameMode="matchmaking"  // 추가
                     isPlayer1={isPlayer1}
                     onWin={handleGameEnd}
                 />

@@ -158,6 +158,7 @@ export default function Room() {
         <FreeCellGame
           roomCode={roomCode}
           gameSeed={gameSeed}
+          gameMode="versus"  // 추가
           isPlayer1={users[0]?.id === myId}
           onWin={handleGameEnd}
         />

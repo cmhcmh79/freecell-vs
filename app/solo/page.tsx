@@ -87,6 +87,7 @@ export default function SoloPage() {
         <FreeCellGame
           roomCode={`SOLO-${gameSeed}`}
           gameSeed={gameSeed}
+          gameMode="solo"  // 추가
           isPlayer1={true}
           onWin={handleGameEnd}
         />

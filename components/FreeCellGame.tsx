@@ -36,9 +36,17 @@ type Location =
   | { type: 'freeCell'; index: number }
   | { type: 'foundation'; suit: Suit }
 
+// 게임 모드 타입 정의
+type GameMode =
+  | 'matchmaking'  // 랭크 모드 - 매칭 게임 (타이머 O, 대전)
+  | 'ranked'       // 랭크 모드 - 스테이지 (타이머 X, 솔로)
+  | 'solo'         // 솔로 모드 (타이머 X, 솔로)
+  | 'versus'       // 친구 대결 (타이머 X, 대전)
+
 type Props = {
   roomCode: string
   gameSeed: number
+  gameMode: GameMode  // 추가
   isPlayer1: boolean
   onWin: (isMe: boolean) => void
 }
@@ -102,7 +110,12 @@ const getCompletedCount = (game: GameState) =>
 ===================== */
 
 export default function FreeCellGame(props: Props) {
-  const { roomCode, gameSeed, isPlayer1, onWin } = props
+  const { roomCode, gameSeed, gameMode, isPlayer1, onWin } = props
+
+  // 게임 모드별 특성 계산
+  const isMultiplayer = gameMode === 'matchmaking' || gameMode === 'versus'  // 대전 게임 여부
+  const hasTimer = gameMode === 'matchmaking'  // 타이머 사용 여부
+  const isSoloGame = gameMode === 'solo' || gameMode === 'ranked'  // 솔로 게임 여부
 
   const [myGame, setMyGame] = useState<GameState | null>(null)
   const [opponentGame, setOpponentGame] = useState<GameState | null>(null)
@@ -112,7 +125,7 @@ export default function FreeCellGame(props: Props) {
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   /* =====================
-   Timer
+   Timer (매칭 게임에서만)
 ===================== */
   const MATCH_TIME = 5 * 60 // 5분
   const [timeLeft, setTimeLeft] = useState(MATCH_TIME)
@@ -122,6 +135,7 @@ export default function FreeCellGame(props: Props) {
   ===================== */
 
   const createDeck = (seed: number): Card[] => {
+
     const suits: Suit[] = ['S', 'H', 'D', 'C']
     const values: Value[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
     const deck: Card[] = []
@@ -161,27 +175,34 @@ export default function FreeCellGame(props: Props) {
   useEffect(() => {
     const state = initGame(gameSeed)
     setMyGame(state)
-    setOpponentGame(JSON.parse(JSON.stringify(state)))
 
-    const channel = supabase.channel(`game-${roomCode}`)
-    channelRef.current = channel
-
-    channel
-      .on('broadcast', { event: 'move' }, ({ payload }) => {
-        const expectedId = isPlayer1 ? 'player2' : 'player1'
-        if (payload.playerId !== expectedId) return
-        setOpponentGame(payload.gameState)
-        if (checkWin(payload.gameState)) onWin(false)
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-      channelRef.current = null
+    // 대전 게임일 때만 상대방 상태 초기화
+    if (isMultiplayer) {
+      setOpponentGame(JSON.parse(JSON.stringify(state)))
     }
-  }, [gameSeed, roomCode, isPlayer1, onWin])
+    // 대전 게임일 때만 채널 구독
+    if (isMultiplayer) {
+      const channel = supabase.channel(`game-${roomCode}`)
+      channelRef.current = channel
 
-  // 타이머
+      channel
+        .on('broadcast', { event: 'move' }, ({ payload }) => {
+          const expectedId = isPlayer1 ? 'player2' : 'player1'
+          if (payload.playerId !== expectedId) return
+          setOpponentGame(payload.gameState)
+          if (checkWin(payload.gameState)) onWin(false)
+        })
+
+      return () => {
+        supabase.removeChannel(channel)
+        channelRef.current = null
+      }
+    }
+
+
+  }, [gameSeed, roomCode, isPlayer1, onWin, isMultiplayer])
+
+  // 타이머 (매칭 게임에서만)
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -193,21 +214,26 @@ export default function FreeCellGame(props: Props) {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [hasTimer])
 
-  // 타임오버 체크 (별도 useEffect)
+  // 타임오버 체크 (매칭 게임에서만))
   useEffect(() => {
+    if (!hasTimer) return
+
     if (timeLeft === 0 && myGame && opponentGame) {
       handleTimeOver()
     }
-  }, [timeLeft, myGame, opponentGame])
+  }, [timeLeft, myGame, opponentGame, hasTimer])
 
   /* =====================
      Move
   ===================== */
 
   const makeMove = async (from: Location, to: Location) => {
-    if (!myGame || timeLeft === 0) return
+    if (!myGame) return
+
+    // 매칭 게임에서만 타이머 체크
+    if (hasTimer && timeLeft === 0) return
 
     setHistory([...history, structuredClone(myGame)])
 
@@ -247,8 +273,8 @@ export default function FreeCellGame(props: Props) {
     next.moves++
     setMyGame(next)
 
-    // 기존 채널 인스턴스 사용
-    if (channelRef.current) {
+    // 대전 게임일 때만 브로드캐스트
+    if (isMultiplayer && channelRef.current) {
       await channelRef.current.send({
         type: 'broadcast',
         event: 'move',
@@ -281,10 +307,12 @@ export default function FreeCellGame(props: Props) {
   }
 
   const handleTimeOver = () => {
+    if (!hasTimer || !opponentGame) return
+
     debugLogger.log('handleTimeOver: 시간 종료!')
 
     const myScore = getCompletedCount(myGame!)
-    const oppScore = getCompletedCount(opponentGame!)
+    const oppScore = getCompletedCount(opponentGame)
 
     debugLogger.log(`내 점수: ${myScore}, 상대 점수: ${oppScore}`)
     if (myScore > oppScore) {
@@ -377,7 +405,10 @@ export default function FreeCellGame(props: Props) {
     }
   }
 
-  if (!myGame || !opponentGame) return null
+  // autoWin, surrender, undo, reset 함수들도 isMultiplayer로 브로드캐스트 조건 처리
+
+  if (!myGame) return null
+  if (isMultiplayer && !opponentGame) return null
 
   /* =====================
      Render
@@ -422,12 +453,20 @@ export default function FreeCellGame(props: Props) {
 
                 {/* 중앙 정보 */}
                 <div className="flex-1 text-center text-white">
-                  <div className="font-bold text-lg">⏱ {formatTime(timeLeft)}</div>
-                  <div className="text-xs opacity-80">남은 시간</div>
+                  {hasTimer ? (
+                    <>
+                      <div className="font-bold text-lg">⏱ {formatTime(timeLeft)}</div>
+                      <div className="text-xs opacity-80">남은 시간</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-xs opacity-80">#{gameSeed}</div>
+                    </>
+                  )}
                 </div>
 
-                {/* 오른쪽: 상대방 파운데이션 (Foundation 위쪽) */}
-                <div className="bg-black/50 rounded-lg p-2" style={{ width: '44.94%' }}>
+                {/* 오른쪽: 상대방 파운데이션 (대전 게임에서만) */}
+                {isMultiplayer && opponentGame ? (<div className="bg-black/50 rounded-lg p-2" style={{ width: '44.94%' }}>
                   <div className="text-white text-xs font-bold mb-1 text-center">
                     상대방
                   </div>
@@ -457,6 +496,9 @@ export default function FreeCellGame(props: Props) {
                     완성: {Object.values(opponentGame.foundations).reduce((s, f) => s + f.length, 0)}/52
                   </div>
                 </div>
+                ) : (
+                  <div style={{ width: '44.94%' }} />
+                )}
               </div>
 
               {/* 두 번째 줄: FreeCell + Foundation */}

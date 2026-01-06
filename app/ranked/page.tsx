@@ -227,6 +227,7 @@ export default function RankedPage() {
         <FreeCellGame
           roomCode={`RANKED-${currentStage}`}
           gameSeed={currentStage}
+          gameMode="ranked"  // 추가
           isPlayer1={true}
           onWin={handleGameEnd}
         />
