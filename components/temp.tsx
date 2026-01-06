@@ -112,8 +112,8 @@ export default function FreeCellGame(props: Props) {
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   /* =====================
-   Timer
-===================== */
+     Timer
+  ===================== */
   const MATCH_TIME = 5 * 60 // 5분
   const [timeLeft, setTimeLeft] = useState(MATCH_TIME)
 
@@ -271,8 +271,8 @@ export default function FreeCellGame(props: Props) {
   }
 
   /* =====================
-   타임 함수
-===================== */
+     타임 함수
+  ===================== */
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60)
@@ -282,11 +282,12 @@ export default function FreeCellGame(props: Props) {
 
   const handleTimeOver = () => {
     debugLogger.log('handleTimeOver: 시간 종료!')
-
+    
     const myScore = getCompletedCount(myGame!)
     const oppScore = getCompletedCount(opponentGame!)
 
     debugLogger.log(`내 점수: ${myScore}, 상대 점수: ${oppScore}`)
+
     if (myScore > oppScore) {
       debugLogger.log('내가 승리!')
       onWin(true)
@@ -337,6 +338,7 @@ export default function FreeCellGame(props: Props) {
         },
       })
     }
+
     onWin(true)
   }
 
