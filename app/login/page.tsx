@@ -25,57 +25,58 @@ export default function LoginPage() {
   }, [router])
 
 
-/* ======================
-   회원가입
-====================== */
-const handleSignUp = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
-  setMessage('')
+  /* ======================
+     회원가입
+  ====================== */
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
 
-  try {
-    // [추가] 닉네임 중복 체크
-    const { data: existingNickname, error: nickError } = await supabase
-      .from('profiles')
-      .select('nickname')
-      .eq('nickname', nickname)
-      .single()
+    try {
+      // 1. 닉네임 중복 체크 (기존 로직)
+      const { data: nickCheck } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .eq('nickname', nickname)
+        .maybeSingle() // single() 대신 maybeSingle()이 에러 처리에 더 유연합니다
 
-    if (existingNickname) {
-      throw new Error('이미 사용 중인 닉네임입니다.')
-    }
+      if (nickCheck) throw new Error('이미 사용 중인 닉네임입니다.')
 
-    // 1. Auth 회원가입
-    const { data: authData, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nickname: nickname
+      // 2. [추가] 이메일 중복 체크 (profiles 테이블 기준)
+      const { data: emailCheck } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (emailCheck) throw new Error('이미 등록된 이메일 주소입니다.')
+
+      // 3. Auth 회원가입 시도
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { nickname }
         }
-      }
-    })
+      })
 
-    if (error) {
-      // [추가] 이메일 중복 에러 처리
-      if (error.message.includes('already registered')) {
-        throw new Error('이미 가입된 이메일 주소입니다.')
+      if (authError) throw authError
+
+      // 만약 이메일 인증이 꺼져있는데도 중복 가입이 된다면
+      // authData.user?.identities가 빈 배열인지 확인하는 방법도 있습니다.
+      if (authData.user?.identities?.length === 0) {
+        throw new Error('이미 가입된 이메일입니다. 로그인을 시도하세요.')
       }
-      throw error
+
+      setMessage('회원가입 성공! 이메일 인증을 완료해주세요.')
+      // ... 생략
+    } catch (err: any) {
+      setMessage(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    if (!authData.user) throw new Error('유저 생성 실패')
-
-    setMessage('회원가입 성공! 이메일 인증을 완료해주세요.')
-    setTimeout(() => { router.push('/') }, 3000)
-
-  } catch (err: any) {
-    // 한국어 메시지로 변환하여 사용자에게 보여줌
-    setMessage(err.message)
-  } finally {
-    setLoading(false)
   }
-}
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -177,8 +178,8 @@ const handleSignUp = async (e: React.FormEvent) => {
 
           {message && (
             <div className={`text-sm p-3 rounded-lg ${message.includes('성공')
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
               }`}>
               {message}
             </div>

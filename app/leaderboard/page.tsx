@@ -59,16 +59,26 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-4">
+ 
+        
+
+        <div className="bg-white rounded-lg shadow-2xl p-8">
+
+
+         {/* 뒤로가기 */}
+        <div className="mb-6">
           <button
-            onClick={() => router.push('/lobby')}
-            className="text-white hover:underline"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
           >
-            ← 로비로 돌아가기
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">뒤로가기</span>
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-2xl p-8">
+
           <h1 className="text-4xl font-bold mb-6 text-center">🏆 리더보드</h1>
 
           {/* 정렬 버튼 */}
