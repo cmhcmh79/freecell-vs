@@ -16,6 +16,7 @@ export default function RankedPage() {
 
   const [lastClearedStage, setLastClearedStage] = useState(0)
   const currentStage = lastClearedStage + 1
+  const maxDisplayStage = currentStage + 1
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -50,6 +51,20 @@ export default function RankedPage() {
     checkAuth()
   }, [router])
 
+    /* =====================
+     displayStage 안전장치
+  ===================== */
+  useEffect(() => {
+    if (displayStage > maxDisplayStage) {
+      setDisplayStage(maxDisplayStage)
+    }
+  }, [displayStage, maxDisplayStage])
+
+  /* =====================
+     스테이지 이동
+  ===================== */
+
+
   // 1개씩 이동
   const handlePrevStage = () => {
     if (displayStage > 1) {
@@ -58,7 +73,7 @@ export default function RankedPage() {
   }
 
   const handleNextStage = () => {
-    setDisplayStage(displayStage + 1)
+    setDisplayStage(prev => Math.min(prev + 1, maxDisplayStage))
   }
 
   // 10개씩 이동
@@ -68,8 +83,7 @@ export default function RankedPage() {
   }
 
   const handleNext10Stage = () => {
-    const newStage = displayStage + 10
-    setDisplayStage(newStage)
+    setDisplayStage(prev => Math.min(prev + 10, maxDisplayStage))
   }
 
   const canPlayStage = (stage: number) => {
