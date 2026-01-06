@@ -1,16 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
   title: {
@@ -74,26 +63,28 @@ export const metadata: Metadata = {
     }
   },
   verification: {
-    // Google Search Console 인증 코드 (나중에 추가)
-    // google: 'your-verification-code',
+    // Google Search Console에서 받은 인증 코드를 여기에 입력하세요
+    google: 'e6a2df2841cc1ea4',
   }
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="ko" translate="no">
+    <html lang="ko">
       <head>
-        <meta name="google" content="notranslate" />
         {/* 추가 메타 태그 */}
         <meta name="theme-color" content="#15803d" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
+        
+        {/* Naver Search Advisor 인증 */}
+        <meta name="naver-site-verification" content="5d9ad07e6abe6f2227a1ad36768bbb3b643f7ee4" />
+        
         {/* 구조화된 데이터 (Schema.org) */}
         <script
           type="application/ld+json"
@@ -119,14 +110,8 @@ export default function RootLayout({
             })
           }}
         />
-
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        translate="no"
-      >
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
-  );
+  )
 }
