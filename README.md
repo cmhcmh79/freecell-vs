@@ -42,6 +42,28 @@ Next.js 기반 웹 게임으로, 실시간 대전을 지원하며 회원 관리�
 
 ---
 
+## 기능 개선(파일 분리하기)
+components/
+├── FreeCellGame.tsx (120줄) - 메인 컴포넌트             [ ]
+├── FreeCellGame.css                                    [ ]
+└── freecell/                                           [ ]
+    ├── types.ts - 타입 정의                             [V]
+    ├── constants.ts - 상수                              [V]
+    ├── deckUtils.ts - 덱 생성 로직                       [V]
+    ├── gameLogic.ts - 게임 로직 (검증, 승리 조건 등)     [V]
+    ├── useGameTimer.ts - 타이머 훅                      [ ]
+    ├── useRealtimeSync.ts - Realtime 동기화 훅         [ ]
+    ├── useFreeCellGame.ts - 게임 상태 관리 훅            [ ]
+    └── components/                                       [ ]
+        ├── GameControls.tsx - 게임 컨트롤 버튼            [ ]
+        ├── GameInfo.tsx - 게임 정보 표시                 [ ]
+        ├── OpponentInfo.tsx - 상대방 정보                [ ]
+        ├── FreeCellArea.tsx - FreeCell 영역              [ ]
+        ├── FoundationArea.tsx - Foundation 영역          [ ]
+        ├── ColumnArea.tsx - 컬럼 영역                     [ ]
+        └── DevControls.tsx - 개발자 테스트 버튼           [ ]
+
+
 ## 기술 스택
 
 ### Frontend / Server

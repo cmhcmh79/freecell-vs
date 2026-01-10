@@ -8,108 +8,18 @@ import DebugLogPanel from '@/components/DebugLogPanel'
 import { debugLogger } from '@/utils/debugLogger'
 import { IS_DEV } from '@/config/env'
 
+import type { FreeCellGameProps, Suit, Card, Value, GameState, Location} from './freecell/types'
+import { MATCH_TIME, CARD_VALUES, CARD_VALUE_MAP, SUITS } from './freecell/constants'
+import { createDeck} from './freecell/deckUtils'
+import { getCompletedCount, canPlaceOnColumn, canPlaceOnFoundation, checkWin, formatTime, isSameLocation} from './freecell/gameLogic'
 
-/* =====================
-   Types
-===================== */
 
-type Suit = 'S' | 'H' | 'D' | 'C'
-type Value =
-  | 'A' | '2' | '3' | '4' | '5'
-  | '6' | '7' | '8' | '9' | '10'
-  | 'J' | 'Q' | 'K'
-
-type Card = {
-  suit: Suit
-  value: Value
-}
-
-type GameState = {
-  columns: Card[][]
-  freeCells: (Card | null)[]
-  foundations: Record<Suit, Card[]>
-  moves: number
-}
-
-type Location =
-  | { type: 'column'; index: number }
-  | { type: 'freeCell'; index: number }
-  | { type: 'foundation'; suit: Suit }
-
-// 게임 모드 타입 정의
-type GameMode =
-  | 'matchmaking'  // 랭크 모드 - 매칭 게임 (타이머 O, 대전)
-  | 'ranked'       // 랭크 모드 - 스테이지 (타이머 X, 솔로)
-  | 'solo'         // 솔로 모드 (타이머 X, 솔로)
-  | 'versus'       // 친구 대결 (타이머 X, 대전)
-
-type Props = {
-  roomCode: string
-  gameSeed: number
-  gameMode: GameMode  // 추가
-  isPlayer1: boolean
-  onWin: (isMe: boolean) => void
-}
-
-/* =====================
-   Helpers
-===================== */
-
-const isRed = (suit: Suit) => suit === 'H' || suit === 'D'
-
-const getCardValue = (card: Card): number => {
-  const map: Record<Value, number> = {
-    A: 1, '2': 2, '3': 3, '4': 4, '5': 5,
-    '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-    J: 11, Q: 12, K: 13,
-  }
-  return map[card.value]
-}
-
-const canPlaceOnColumn = (card: Card, column: Card[]) => {
-  if (column.length === 0) return true
-  const top = column[column.length - 1]
-  return (
-    isRed(card.suit) !== isRed(top.suit) &&
-    getCardValue(card) === getCardValue(top) - 1
-  )
-}
-
-const canPlaceOnFoundation = (card: Card, foundation: Card[]) => {
-  if (foundation.length === 0) return card.value === 'A'
-  const top = foundation[foundation.length - 1]
-  return getCardValue(card) === getCardValue(top) + 1
-}
-
-const checkWin = (state: GameState) =>
-  Object.values(state.foundations).every(f => f.length === 13)
-
-const isSameLocation = (a: Location | null, b: Location): boolean => {
-  if (!a) return false
-  if (a.type !== b.type) return false
-
-  if (a.type === 'foundation' && b.type === 'foundation') {
-    return a.suit === b.suit
-  }
-
-  if (
-    (a.type === 'column' || a.type === 'freeCell') &&
-    (b.type === 'column' || b.type === 'freeCell')
-  ) {
-    return a.index === b.index
-  }
-
-  return false
-}
-
-const getCompletedCount = (game: GameState) =>
-  Object.values(game.foundations).reduce((s, f) => s + f.length, 0)
 
 /* =====================
    Component
 ===================== */
 
-export default function FreeCellGame(props: Props) {
+export default function FreeCellGame(props: FreeCellGameProps) {
   const { roomCode, gameSeed, gameMode, isPlayer1, onWin } = props
 
   // 게임 모드별 특성 계산
@@ -127,30 +37,12 @@ export default function FreeCellGame(props: Props) {
   /* =====================
    Timer (매칭 게임에서만)
 ===================== */
-  const MATCH_TIME = 5 * 60 // 5분
   const [timeLeft, setTimeLeft] = useState(MATCH_TIME)
 
   /* =====================
      Deck / Init
   ===================== */
 
-  const createDeck = (seed: number): Card[] => {
-
-    const suits: Suit[] = ['S', 'H', 'D', 'C']
-    const values: Value[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
-    const deck: Card[] = []
-
-    suits.forEach(s => values.forEach(v => deck.push({ suit: s, value: v })))
-
-    let r = seed
-    for (let i = deck.length - 1; i > 0; i--) {
-      r = (r * 9301 + 49297) % 233280
-      const j = r % (i + 1)
-        ;[deck[i], deck[j]] = [deck[j], deck[i]]
-    }
-
-    return deck
-  }
 
   const initGame = (seed: number): GameState => {
     const deck = createDeck(seed)
@@ -299,12 +191,6 @@ export default function FreeCellGame(props: Props) {
   /* =====================
    타임 함수
 ===================== */
-
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60)
-    const s = sec % 60
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
 
   const handleTimeOver = () => {
     if (!hasTimer || !opponentGame) return
