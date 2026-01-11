@@ -15,6 +15,7 @@ declare global {
     interface Window {
         YT: any
         onYouTubeIframeAPIReady: () => void
+        youtubeApiReady?: boolean
     }
 }
 
@@ -33,26 +34,38 @@ export default function RewardAdModal({
     const playerRef = useRef<any>(null)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-    const apiLoadedRef = useRef(false)
 
     // 임베드 가능한 유튜브 영상 ID 목록
-    // 이 영상들은 임베드가 확실히 허용된 공식 영상들입니다
     const youtubeVideoIds = [
-        '_9vgaBtKBsQ',
+        '_9vgaBtKBsQ', // 예시 영상
         '4wS9_gI1dYw',
         'r5djepjmrDo',
     ]
 
     const [currentVideoId, setCurrentVideoId] = useState('')
 
-    // YouTube API 로드
+    // YouTube API 전역 로드 (앱 전체에서 한 번만)
     useEffect(() => {
-        if (!window.YT && !apiLoadedRef.current) {
-            apiLoadedRef.current = true
-            const tag = document.createElement('script')
-            tag.src = 'https://www.youtube.com/iframe_api'
-            const firstScriptTag = document.getElementsByTagName('script')[0]
-            firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
+        if (typeof window === 'undefined') return
+
+        // 이미 API가 로드되어 있으면 스킵
+        if (window.youtubeApiReady || document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+            return
+        }
+
+        console.log('Loading YouTube IFrame API...')
+
+        const tag = document.createElement('script')
+        tag.src = 'https://www.youtube.com/iframe_api'
+        tag.async = true
+
+        const firstScriptTag = document.getElementsByTagName('script')[0]
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
+
+        // API 로드 완료 콜백 (전역에서 한 번만 설정)
+        window.onYouTubeIframeAPIReady = () => {
+            console.log('YouTube IFrame API Ready!')
+            window.youtubeApiReady = true
         }
     }, [])
 
@@ -82,48 +95,52 @@ export default function RewardAdModal({
             setAdClosed(false)
             setIsLoading(true)
             setLoadError(false)
+            setCurrentVideoId('')
             return
         }
 
         // 모달 열릴 때 랜덤 영상 선택
         const randomVideoId = youtubeVideoIds[Math.floor(Math.random() * youtubeVideoIds.length)]
         setCurrentVideoId(randomVideoId)
-
-        // 모달 열릴 때 플레이어 생성
         setIsLoading(true)
         setLoadError(false)
 
-        // 10초 타임아웃 설정 - 로딩이 너무 오래 걸리면 에러 표시
+        console.log('Modal opened, selected video:', randomVideoId)
+
+        // 15초 타임아웃 설정
         loadTimeoutRef.current = setTimeout(() => {
-            if (isLoading && !isPlaying) {
-                console.error('YouTube player loading timeout')
-                setLoadError(true)
-                setIsLoading(false)
-            }
-        }, 10000)
+            console.error('YouTube player loading timeout')
+            setLoadError(true)
+            setIsLoading(false)
+        }, 15000)
 
-        const initPlayer = () => {
-            if (!window.YT || !window.YT.Player) {
-                setTimeout(initPlayer, 100)
-                return
+        // 플레이어 생성 함수
+        const createPlayer = () => {
+            console.log('Creating YouTube player...')
+
+            // 기존 플레이어가 있으면 제거
+            if (playerRef.current) {
+                try {
+                    playerRef.current.destroy()
+                } catch (e) {
+                    console.error('Error destroying old player:', e)
+                }
+                playerRef.current = null
             }
 
-            // currentVideoId가 설정될 때까지 대기
-            if (!currentVideoId) {
-                setTimeout(initPlayer, 50)
+            // 플레이어 컨테이너 확인
+            const container = document.getElementById('youtube-player')
+            if (!container) {
+                console.error('Player container not found')
+                setTimeout(createPlayer, 100)
                 return
             }
 
             try {
-                // 기존 플레이어가 있으면 제거
-                if (playerRef.current) {
-                    playerRef.current.destroy()
-                }
-
                 playerRef.current = new window.YT.Player('youtube-player', {
                     height: '360',
                     width: '640',
-                    videoId: currentVideoId,
+                    videoId: randomVideoId,
                     playerVars: {
                         autoplay: 1,
                         controls: 0,
@@ -131,21 +148,24 @@ export default function RewardAdModal({
                         fs: 0,
                         modestbranding: 1,
                         rel: 0,
-                        mute: 1, // 음소거로 시작 (autoplay 정책 준수)
+                        mute: 1,
                     },
                     events: {
                         onReady: (event: any) => {
                             console.log('YouTube player ready')
                             setIsLoading(false)
-                            // 타임아웃 클리어
                             if (loadTimeoutRef.current) {
                                 clearTimeout(loadTimeoutRef.current)
                                 loadTimeoutRef.current = null
                             }
                             event.target.playVideo()
-                            // 1초 후 음소거 해제 (자동재생 후)
+                            // 1초 후 음소거 해제
                             setTimeout(() => {
-                                event.target.unMute()
+                                try {
+                                    event.target.unMute()
+                                } catch (e) {
+                                    console.error('Error unmuting:', e)
+                                }
                             }, 1000)
                         },
                         onStateChange: (event: any) => {
@@ -153,32 +173,28 @@ export default function RewardAdModal({
                             if (event.data === window.YT.PlayerState.PLAYING) {
                                 setIsPlaying(true)
                                 setIsLoading(false)
-                                // 타임아웃 클리어
                                 if (loadTimeoutRef.current) {
                                     clearTimeout(loadTimeoutRef.current)
                                     loadTimeoutRef.current = null
                                 }
                             } else if (event.data === window.YT.PlayerState.PAUSED) {
-                                // 일시정지되면 다시 재생
-                                event.target.playVideo()
+                                try {
+                                    event.target.playVideo()
+                                } catch (e) {
+                                    console.error('Error resuming play:', e)
+                                }
                             } else if (event.data === window.YT.PlayerState.CUED) {
-                                // 영상이 준비되면 재생
-                                event.target.playVideo()
+                                try {
+                                    event.target.playVideo()
+                                } catch (e) {
+                                    console.error('Error playing cued video:', e)
+                                }
                             }
                         },
                         onError: (event: any) => {
                             console.error('YouTube player error:', event.data)
-                            // 에러 코드별 메시지
-                            let errorMsg = '광고를 불러올 수 없습니다.'
-                            if (event.data === 2) errorMsg = '잘못된 영상 ID입니다.'
-                            if (event.data === 5) errorMsg = 'HTML5 플레이어 오류입니다.'
-                            if (event.data === 100) errorMsg = '이 영상은 재생할 수 없습니다.'
-                            if (event.data === 101 || event.data === 150) errorMsg = '이 영상은 외부 사이트에서 재생할 수 없습니다.'
-
-                            console.error(errorMsg)
                             setLoadError(true)
                             setIsLoading(false)
-                            // 타임아웃 클리어
                             if (loadTimeoutRef.current) {
                                 clearTimeout(loadTimeoutRef.current)
                                 loadTimeoutRef.current = null
@@ -190,15 +206,38 @@ export default function RewardAdModal({
                 console.error('Failed to create player:', error)
                 setLoadError(true)
                 setIsLoading(false)
+                if (loadTimeoutRef.current) {
+                    clearTimeout(loadTimeoutRef.current)
+                    loadTimeoutRef.current = null
+                }
             }
         }
 
-        // API가 로드될 때까지 대기
-        if (window.YT && window.YT.Player) {
-            initPlayer()
-        } else {
-            window.onYouTubeIframeAPIReady = initPlayer
+        // API 로드 대기 및 플레이어 생성
+        let checkCount = 0
+        const maxChecks = 150 // 15초
+
+        const checkAndCreatePlayer = () => {
+            checkCount++
+
+            if (window.YT && window.YT.Player) {
+                console.log('YouTube API available, creating player')
+                createPlayer()
+            } else if (checkCount < maxChecks) {
+                console.log(`Waiting for YouTube API... (${checkCount}/${maxChecks})`)
+                setTimeout(checkAndCreatePlayer, 100)
+            } else {
+                console.error('YouTube API failed to load after maximum retries')
+                setLoadError(true)
+                setIsLoading(false)
+                if (loadTimeoutRef.current) {
+                    clearTimeout(loadTimeoutRef.current)
+                    loadTimeoutRef.current = null
+                }
+            }
         }
+
+        checkAndCreatePlayer()
 
         return () => {
             if (timerRef.current) {
@@ -208,7 +247,7 @@ export default function RewardAdModal({
                 clearTimeout(loadTimeoutRef.current)
             }
         }
-    }, [isOpen]) // currentVideoId 의존성 제거
+    }, [isOpen])
 
     // 타이머 시작
     useEffect(() => {
@@ -271,29 +310,8 @@ export default function RewardAdModal({
     }
 
     const handleRetry = () => {
-        setLoadError(false)
-        setIsLoading(true)
-
-        // 새로운 랜덤 영상 선택
-        const randomVideoId = youtubeVideoIds[Math.floor(Math.random() * youtubeVideoIds.length)]
-        setCurrentVideoId(randomVideoId)
-
-        // 플레이어 재생성
-        if (playerRef.current) {
-            try {
-                playerRef.current.destroy()
-            } catch (e) {
-                console.error('Player destroy error:', e)
-            }
-            playerRef.current = null
-        }
-
-        // 모달 다시 열기
         onClose()
-        setTimeout(() => {
-            // 여기서는 부모 컴포넌트에서 다시 열어줘야 함
-            alert('다시 시도하려면 광고 버튼을 다시 클릭해주세요.')
-        }, 100)
+        alert('광고 버튼을 다시 클릭해주세요.')
     }
 
     if (!isOpen) return null
@@ -323,16 +341,17 @@ export default function RewardAdModal({
                         style={{ height: '360px' }}
                     >
                         {isLoading && !loadError && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black">
+                            <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
                                 <div className="text-white text-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
                                     <p>광고 로딩 중...</p>
+                                    <p className="text-xs text-gray-400 mt-2">잠시만 기다려주세요</p>
                                 </div>
                             </div>
                         )}
 
                         {loadError && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black">
+                            <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
                                 <div className="text-white text-center p-4">
                                     <div className="text-4xl mb-4">😢</div>
                                     <p className="mb-2">광고를 불러올 수 없습니다.</p>
