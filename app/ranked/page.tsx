@@ -1,9 +1,11 @@
+// app/ranked/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import FreeCellGame from '@/components/FreeCellGame'
+import RewardAdModal from '@/components/RewardAdModal'
 
 export default function RankedPage() {
   const router = useRouter()
@@ -13,6 +15,7 @@ export default function RankedPage() {
   const [gameStarted, setGameStarted] = useState(false)
   const [gameStartTime, setGameStartTime] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [isAdModalOpen, setIsAdModalOpen] = useState(false)
 
   const [lastClearedStage, setLastClearedStage] = useState(0)
   const currentStage = lastClearedStage + 1
@@ -51,9 +54,9 @@ export default function RankedPage() {
     checkAuth()
   }, [router])
 
-    /* =====================
-     displayStage 안전장치
-  ===================== */
+  /* =====================
+   displayStage 안전장치
+===================== */
   useEffect(() => {
     if (displayStage > maxDisplayStage) {
       setDisplayStage(maxDisplayStage)
@@ -63,7 +66,6 @@ export default function RankedPage() {
   /* =====================
      스테이지 이동
   ===================== */
-
 
   // 1개씩 이동
   const handlePrevStage = () => {
@@ -106,18 +108,16 @@ export default function RankedPage() {
     setGameStarted(true)
   }
 
-  const handleAdSkip = async () => {
+  const handleAdSkipClick = () => {
     if (displayStage !== currentStage) {
       alert('현재 도전 가능한 스테이지만 스킵할 수 있습니다!')
       return
     }
 
-    if (!confirm(`광고를 보고 스테이지 ${displayStage}을(를) 클리어하시겠습니까?`)) {
-      return
-    }
+    setIsAdModalOpen(true)
+  }
 
-    alert('광고를 시청합니다... (준비 중)')
-
+  const handleAdRewardEarned = async () => {
     const clearedStage = currentStage
     const newRp = (profile?.rp || 1000) + 1
     const newAdViews = (profile?.total_ad_views || 0) + 1
@@ -149,7 +149,8 @@ export default function RankedPage() {
       setProfile({
         ...profile,
         rp: newRp,
-        total_ad_views: newAdViews
+        total_ad_views: newAdViews,
+        solo_last_cleared_stage: clearedStage
       })
 
       alert(`🎉 스테이지 ${clearedStage} 클리어! +1 RP`)
@@ -196,7 +197,7 @@ export default function RankedPage() {
       console.error('저장 실패:', err)
     }
 
-    setProfile({ ...profile, rp: newRp })
+    setProfile({ ...profile, rp: newRp, solo_last_cleared_stage: newLastCleared })
 
     setLastClearedStage(newLastCleared)
     setDisplayStage(newLastCleared + 1)
@@ -227,7 +228,7 @@ export default function RankedPage() {
         <FreeCellGame
           roomCode={`RANKED-${currentStage}`}
           gameSeed={currentStage}
-          gameMode="ranked"  // 추가
+          gameMode="ranked"
           isPlayer1={true}
           onWin={handleGameEnd}
         />
@@ -401,8 +402,8 @@ export default function RankedPage() {
               {/* 광고 스킵 버튼 (현재 스테이지만) */}
               {isCurrent && (
                 <button
-                  onClick={handleAdSkip}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                  onClick={handleAdSkipClick}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
                 >
                   📺 광고 보고 스킵하기
                 </button>
@@ -421,6 +422,14 @@ export default function RankedPage() {
           </p>
         </div>
       </div>
+
+      {/* 리워드 광고 모달 */}
+      <RewardAdModal
+        isOpen={isAdModalOpen}
+        onClose={() => setIsAdModalOpen(false)}
+        onRewardEarned={handleAdRewardEarned}
+        rewardDescription={`스테이지 ${displayStage} 스킵`}
+      />
     </div>
   )
 }
