@@ -8,6 +8,7 @@ export default function UITestPage() {
       <FreeCellGame
         roomCode="ui-test"
         gameSeed={12345}   // 고정 시드 (원하면 제거)
+        gameMode="matchmaking"  // 추가
         isPlayer1={true} 
         onWin={(isMe) => {
           alert(isMe ? '🎉 승리!' : '😢 패배')
