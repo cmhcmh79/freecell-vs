@@ -272,16 +272,24 @@ export default function RankedPage() {
           </div>
         </div>
 
+
         {/* 매칭 게임 */}
         <div className="mb-6">
           <button
             onClick={() => router.push('/matchmaking')}
-            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors"
+            disabled={(profile?.rp || 1000) < 10}
+            className={`w-full font-bold py-4 px-6 rounded-lg text-xl transition-colors ${(profile?.rp || 1000) >= 10
+                ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
           >
             ⚔️ 매칭 게임
           </button>
           <p className="text-xs text-gray-500 text-center mt-2">
-            실시간 대전 | 승리 +10 RP, 패배 -10 RP
+            {(profile?.rp || 1000) >= 10
+              ? '실시간 대전 | 승리 +10 RP, 패배 -10 RP'
+              : '🔒 10 RP 이상 필요 (현재: ' + (profile?.rp || 1000) + ' RP)'
+            }
           </p>
         </div>
 
