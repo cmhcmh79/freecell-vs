@@ -426,7 +426,6 @@ export default function RankedPage() {
             💡 <strong>랭크 모드:</strong><br />
             • 스테이지를 순서대로 클리어하세요<br />
             • 클리어 시 +1 RP 획득<br />
-            • 광고 스킵 시 RP 없음 (다음 스테이지만 해금)
           </p>
         </div>
       </div>

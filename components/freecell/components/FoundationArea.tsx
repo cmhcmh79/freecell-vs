@@ -2,7 +2,7 @@
 
 import React from 'react'
 import type { Card, Suit, Location } from '../types'
-import { SUITS } from '../constants'
+import { SUITS, CARD_SKIN } from '../constants'
 
 type FoundationAreaProps = {
   foundations: Record<Suit, Card[]>
@@ -26,7 +26,7 @@ export const FoundationArea: React.FC<FoundationAreaProps> = ({
               style={
                 top
                   ? {
-                      backgroundImage: `url(/cards/${top.value}${top.suit}.png)`,
+                      backgroundImage: `url(/cards/${CARD_SKIN}/${top.value}${top.suit}.png)`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                     }

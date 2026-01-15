@@ -1,5 +1,7 @@
 // components/freecell/constants.ts
 
+export const CARD_SKIN = 'v3'
+
 export const MATCH_TIME = 5 * 60 // 5분
 
 export const CARD_VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'] as const

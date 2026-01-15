@@ -3,6 +3,7 @@
 import React from 'react'
 import type { Card, Location } from '../types'
 import { isSameLocation } from '../gameLogic'
+import { CARD_SKIN } from '../constants'
 
 type FreeCellAreaProps = {
   freeCells: (Card | null)[]
@@ -30,9 +31,10 @@ export const FreeCellArea: React.FC<FreeCellAreaProps> = ({
             style={
               card
                 ? {
-                    backgroundImage: `url(/cards/${card.value}${card.suit}.png)`,
-                    backgroundSize: 'cover',
+                    backgroundImage: `url(/cards/${CARD_SKIN}/${card.value}${card.suit}.png)`,
+                    backgroundSize: 'contain',
                     backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
                   }
                 : undefined
             }

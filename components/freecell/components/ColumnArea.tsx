@@ -3,6 +3,7 @@
 import React from 'react'
 import type { Card, Location } from '../types'
 import { isSameLocation } from '../gameLogic'
+import { CARD_SKIN } from '../constants'
 
 type ColumnAreaProps = {
   columns: Card[][]
@@ -22,7 +23,7 @@ export const ColumnArea: React.FC<ColumnAreaProps> = ({
           {col.length === 0 ? (
             <div
               onClick={() => onClick({ type: 'column', index: colIdx })}
-              className="w-full h-0 pb-[135.2%] deck"
+              className="w-full h-0 pb-[133.33%] deck"
             />
           ) : (
             col.map((card, cardIdx) => (
@@ -32,7 +33,7 @@ export const ColumnArea: React.FC<ColumnAreaProps> = ({
                   cardIdx === col.length - 1 &&
                   onClick({ type: 'column', index: colIdx })
                 }
-                className={`relative w-full h-0 pb-[135.2%] ${
+                className={`relative w-full h-0 pb-[133.33%] ${
                   cardIdx !== 0 ? '-mt-[109%]' : ''
                 } ${
                   isSameLocation(selected, {
@@ -44,9 +45,10 @@ export const ColumnArea: React.FC<ColumnAreaProps> = ({
                 }`}
                 style={{
                   zIndex: 10 + cardIdx,
-                  backgroundImage: `url(/cards/${card.value}${card.suit}.png)`,
-                  backgroundSize: 'cover',
+                  backgroundImage: `url(/cards/${CARD_SKIN}/${card.value}${card.suit}.png)`,
+                  backgroundSize: 'contain',
                   backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
                 }}
               />
             ))
