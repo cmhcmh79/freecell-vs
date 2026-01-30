@@ -2,7 +2,7 @@
 
 import React from 'react'
 import type { GameState, Suit } from '../types'
-import { SUITS } from '../constants'
+import { SUITS, CARD_SKIN } from '../constants'
 import { getCompletedCount } from '../gameLogic'
 
 type OpponentInfoProps = {
@@ -16,10 +16,15 @@ export const OpponentInfo: React.FC<OpponentInfoProps> = ({ opponentGame }) => {
 
   return (
     <div className="bg-black/50 rounded-lg p-2" style={{ width: '44.94%' }}>
-      <div className="text-white text-xs font-bold mb-1 text-center">
-        상대방
+      <div className="flex justify-between items-center mb-1">
+        <div className="text-white text-xs font-bold">
+          상대방
+        </div>
+        <div className="text-white text-xs">
+          {getCompletedCount(opponentGame)}/52
+        </div>
       </div>
-      <div className="relative h-0 w-full pb-[22.5%]">
+      <div className="relative h-0 w-full pb-[26.875%]">
         <div className="absolute inset-0 flex gap-1">
           {SUITS.map(suit => {
             const top = opponentGame.foundations[suit as Suit].at(-1)
@@ -30,9 +35,10 @@ export const OpponentInfo: React.FC<OpponentInfoProps> = ({ opponentGame }) => {
                 style={
                   top
                     ? {
-                        backgroundImage: `url(/cards/${top.value}${top.suit}.png)`,
-                        backgroundSize: 'cover',
+                        backgroundImage: `url(/cards/${CARD_SKIN}/${top.value}${top.suit}.png)`,
+                        backgroundSize: 'contain',
                         backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
                       }
                     : undefined
                 }
@@ -40,9 +46,6 @@ export const OpponentInfo: React.FC<OpponentInfoProps> = ({ opponentGame }) => {
             )
           })}
         </div>
-      </div>
-      <div className="text-white text-xs text-center mt-1">
-        완성: {getCompletedCount(opponentGame)}/52
       </div>
     </div>
   )

@@ -1,94 +1,39 @@
-# ♠️ Freecell VS (대전 프리셀)
+[홍보] 운빨 ㅈ망겜에 지친 분들을 위한 ‘대전 프리셀’
+맨날 혼자 카드 맞추던 프리셀 맞는데, 이건 실시간 경쟁임.
 
-온라인 **대전 프리셀(Freecell) 게임**을 개발 중인 프로젝트입니다.  
-Next.js 기반 웹 게임으로, 실시간 대전을 지원하며 회원 관리와 게임 로직을 분리한 구조로 설계되었습니다.
+나랑 상대방이랑 똑같은 덱(시드) 받아서 누가 더 빨리 깨나 붙는 방식이야.
 
-🔗 **배포 링크:** [https://freecell-vs.vercel.app/](https://freecell-vs.vercel.app/)
+1. 요약
+장르: 프리셀 (FreeCell) 실시간 타임어택
 
----
+룰: 모든 유저가 완전 동일한 배치로 시작
 
-## 🎮 주요 기능
+결과: 클리어 타임 + 실수 횟수로 순위 박살냄
 
-- **프리셀 게임 플레이**
-  - 기본 Freecell 규칙 구현
-  - 카드 이동, 컬럼 / 프리셀 / 파운데이션 처리
-- ⚔️ **대전 모드**
-  - 실시간 1:1 대전
-  - 방 생성 및 참가
-  - 상대방 카드 이동 동기화 (Realtime)
-- 👤 **회원 시스템**
-  - 자체 회원 관리 (MariaDB) 및 Supabase Auth 연동
-  - JWT 기반 인증
-- 🌐 **웹 기반 플레이**
-  - 별도 설치 없이 브라우저에서 바로 플레이
+한줄평: "운빨 0%, 순수 능지/피지컬 싸움"
 
----
+2. 특징 (요약)
+공정성: 누구는 깨기 쉬운 판 주고 누구는 억까 판 주고 그런 거 없음. 똑같은 판에서 누가 더 잘하냐만 남음.
 
-## 개발 계획 (Roadmap)
+긴장감: 한 수 삐끗하면 클리어 타임 밀리는데, 거기서 오는 압박감이 생각보다 빡셈.
 
-### 1단계: 메뉴 구성 변경
-- [] Supabase Auth로 로그인/회원가입
-- [] 닉네임 설정
-- [] 프로필 페이지
+회전율: 한 판이 짧아서 똥 쌀 때나 출퇴근할 때 한 판씩 하기 좋음. (근데 복수전 하느라 계속하게 될 수도 있음)
 
+3. 추천 대상
+운빨 요소 있으면 일단 거르고 보는 사람
 
+남들보다 퍼즐 빨리 푼다고 자부하는 사람
 
----
-## 기능 개선
-- [ ] foundation 영역에 동일한 모양이 아니라 색으로 올라가는 문제
-- [ ] 상대쪽 화면이 카드 위쪽으로 올라가는 문제
-- [ ] 정답 자동이동 기능 추가
-- [ ] 여러장 카드 이동 기능 추가
+프리셀 혼자 하다가 심심해서 랭킹 경쟁 마려운 사람
 
----
+📸 실제 플레이 화면
+(여기에 직접 찍은 인게임/랭킹 화면 사진을 올리세요)
 
-## 기능 개선(파일 분리하기)
-components/
-├── FreeCellGame.tsx (120줄) - 메인 컴포넌트             [ ]
-├── FreeCellGame.css                                    [ ]
-└── freecell/                                           [ ]
-    ├── types.ts - 타입 정의                             [V]
-    ├── constants.ts - 상수                              [V]
-    ├── deckUtils.ts - 덱 생성 로직                       [V]
-    ├── gameLogic.ts - 게임 로직 (검증, 승리 조건 등)     [V]
-    ├── useGameTimer.ts - 타이머 훅                      [ ]
-    ├── useRealtimeSync.ts - Realtime 동기화 훅         [ ]
-    ├── useFreeCellGame.ts - 게임 상태 관리 훅            [ ]
-    └── components/                                       [ ]
-        ├── GameControls.tsx - 게임 컨트롤 버튼            [ ]
-        ├── GameInfo.tsx - 게임 정보 표시                 [ ]
-        ├── OpponentInfo.tsx - 상대방 정보                [ ]
-        ├── FreeCellArea.tsx - FreeCell 영역              [ ]
-        ├── FoundationArea.tsx - Foundation 영역          [ ]
-        ├── ColumnArea.tsx - 컬럼 영역                     [ ]
-        └── DevControls.tsx - 개발자 테스트 버튼           [ ]
+🎞️ 플레이 움짤/영상
+(속도감 느껴지는 클리어 장면 하나 올려두면 반응 좋습니다)
 
+한 줄 요약
+똑같은 카드로 누가 더 빨리 깨나 붙는 고인물 양성 프리셀임.
 
-## 기술 스택
-
-### Frontend / Server
-- **Next.js** (App Router)
-- **TypeScript**
-- **Vercel** (배포)
-
-### Realtime / Game Server
-- **Supabase**
-  - Realtime Channel (대전 동기화)
-  - 게임 방 / 매치 데이터 관리
-
-### Database
-- **MariaDB**
-  - 회원 / 계정 / 프로필 관리
-- **Supabase PostgreSQL**
-  - 대전 방 / 매치 결과 저장
-
----
-
-## 아키텍처 개요
-
-```text
-Client (Browser)
-    ↓
-Next.js (Vercel)
-  ├─ MariaDB (회원 / 인증)
-  └─ Supabase (대전 / 실시간 / 매치)
+플레이 링크
+👉 [여기에 게임 링크 붙여넣기]
