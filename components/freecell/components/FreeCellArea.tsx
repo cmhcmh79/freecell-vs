@@ -22,8 +22,15 @@ export const FreeCellArea: React.FC<FreeCellAreaProps> = ({
         {freeCells.map((card, i) => (
           <div
             key={i}
-            onClick={() => onClick({ type: 'freeCell', index: i })}
+            onClick={() => {
+              // 카드가 있으면 선택, 없고 다른 곳이 선택되어 있으면 목적지로 사용
+              if (card || selected) {
+                onClick({ type: 'freeCell', index: i })
+              }
+            }}
             className={`w-1/4 h-full deck ${
+              card || selected ? 'cursor-pointer' : 'cursor-default'
+            } ${
               isSameLocation(selected, { type: 'freeCell', index: i })
                 ? 'ring-2 ring-yellow-400'
                 : ''
