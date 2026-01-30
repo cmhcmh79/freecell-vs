@@ -8,6 +8,8 @@ import {
   canPlaceOnFoundation,
   checkWin,
   getCompletedCount,
+  getMaxMovableCards,
+  getMovableSequence,
 } from './gameLogic'
 import { debugLogger } from '@/utils/debugLogger'
 import { CARD_VALUES, SUITS } from './constants'
@@ -69,7 +71,7 @@ export const useFreeCellGame = ({
     }
   }, [timeLeft, myGame, opponentGame, hasTimer, isPlayer1, onWin])
 
-  // 이동 처리
+  // 이동 처리 (슈퍼무브 지원)
   const makeMove = useCallback(async (from: Location, to: Location) => {
     if (!myGame) return
     if (hasTimer && timeLeft === 0) return
@@ -77,37 +79,81 @@ export const useFreeCellGame = ({
     setHistory(prev => [...prev, structuredClone(myGame)])
 
     const next = structuredClone(myGame)
-    let card: Card | null = null
-
-    if (from.type === 'column') card = next.columns[from.index].at(-1) ?? null
-    else if (from.type === 'freeCell') card = next.freeCells[from.index]
-
-    if (!card) return
-
     let ok = false
 
-    if (to.type === 'column' && canPlaceOnColumn(card, next.columns[to.index])) {
-      next.columns[to.index].push(card)
-      ok = true
+    // 컬럼 → 컬럼: 슈퍼무브 가능
+    if (from.type === 'column' && to.type === 'column') {
+      const fromCol = next.columns[from.index]
+      const toCol = next.columns[to.index]
+      
+      // 이동 가능한 연속된 카드 시퀀스 찾기
+      const sequence = getMovableSequence(fromCol)
+      
+      // 최대 이동 가능한 카드 수 확인
+      const maxMovable = getMaxMovableCards(next, to.index)
+      
+      // 시퀀스가 최대 이동 가능 수보다 크면 실패
+      if (sequence.length > maxMovable) {
+        debugLogger.log(`슈퍼무브 실패: ${sequence.length}장 이동 시도, 최대 ${maxMovable}장 가능`)
+        setHistory(prev => prev.slice(0, -1))
+        return
+      }
+      
+      // 시퀀스의 맨 위 카드가 목적지에 놓일 수 있는지 확인
+      const topCard = sequence[0]
+      if (canPlaceOnColumn(topCard, toCol)) {
+        // 시퀀스 전체를 목적지로 이동
+        sequence.forEach(card => toCol.push(card))
+        // 원래 컬럼에서 시퀀스 제거
+        fromCol.splice(fromCol.length - sequence.length, sequence.length)
+        ok = true
+        
+        if (sequence.length > 1) {
+          debugLogger.log(`슈퍼무브 성공: ${sequence.length}장 이동`)
+        }
+      }
     }
-
-    if (to.type === 'freeCell' && !next.freeCells[to.index]) {
-      next.freeCells[to.index] = card
-      ok = true
+    // 프리셀 → 컬럼
+    else if (from.type === 'freeCell' && to.type === 'column') {
+      const card = next.freeCells[from.index]
+      if (card && canPlaceOnColumn(card, next.columns[to.index])) {
+        next.columns[to.index].push(card)
+        next.freeCells[from.index] = null
+        ok = true
+      }
     }
-
-    if (to.type === 'foundation' && canPlaceOnFoundation(card, next.foundations[to.suit])) {
-      next.foundations[to.suit].push(card)
-      ok = true
+    // 컬럼 → 프리셀
+    else if (from.type === 'column' && to.type === 'freeCell') {
+      const card = next.columns[from.index].at(-1)
+      if (card && !next.freeCells[to.index]) {
+        next.freeCells[to.index] = card
+        next.columns[from.index].pop()
+        ok = true
+      }
+    }
+    // 컬럼 → Foundation
+    else if (from.type === 'column' && to.type === 'foundation') {
+      const card = next.columns[from.index].at(-1)
+      if (card && canPlaceOnFoundation(card, next.foundations[to.suit])) {
+        next.foundations[to.suit].push(card)
+        next.columns[from.index].pop()
+        ok = true
+      }
+    }
+    // 프리셀 → Foundation
+    else if (from.type === 'freeCell' && to.type === 'foundation') {
+      const card = next.freeCells[from.index]
+      if (card && canPlaceOnFoundation(card, next.foundations[to.suit])) {
+        next.foundations[to.suit].push(card)
+        next.freeCells[from.index] = null
+        ok = true
+      }
     }
 
     if (!ok) {
       setHistory(prev => prev.slice(0, -1))
       return
     }
-
-    if (from.type === 'column') next.columns[from.index].pop()
-    if (from.type === 'freeCell') next.freeCells[from.index] = null
 
     next.moves++
     setMyGame(next)
@@ -125,6 +171,9 @@ export const useFreeCellGame = ({
       setSelected(null)
     }
   }, [selected, makeMove])
+
+
+
 
   // 자동 승리
   const autoWin = useCallback(async () => {
