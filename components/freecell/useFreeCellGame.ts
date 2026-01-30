@@ -10,6 +10,7 @@ import {
   getCompletedCount,
   getMaxMovableCards,
   getMovableSequence,
+  autoMoveToFoundations,
 } from './gameLogic'
 import { debugLogger } from '@/utils/debugLogger'
 import { CARD_VALUES, SUITS } from './constants'
@@ -156,11 +157,15 @@ export const useFreeCellGame = ({
     }
 
     next.moves++
-    setMyGame(next)
 
-    await broadcast(next)
+    // 자동으로 Foundation에 올릴 수 있는 카드들 이동
+    const afterAuto = autoMoveToFoundations(next)
 
-    if (checkWin(next)) onWin(true)
+    setMyGame(afterAuto)
+
+    await broadcast(afterAuto)
+
+    if (checkWin(afterAuto)) onWin(true)
   }, [myGame, hasTimer, timeLeft, broadcast, onWin])
 
   const handleClick = useCallback((loc: Location) => {

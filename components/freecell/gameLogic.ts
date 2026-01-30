@@ -28,6 +28,77 @@ export const canPlaceOnFoundation = (card: Card, foundation: Card[]) => {
 export const checkWin = (state: GameState) =>
   Object.values(state.foundations).every(f => f.length === 13)
 
+
+// Foundation에 안전하게 올릴 수 있는지 확인
+// 안전 조건: 반대 색 카드가 모두 n-1 이상 올라가 있어야 함
+export const canAutoMoveToFoundation = (card: Card, state: GameState): boolean => {
+  const cardValue = getCardValue(card)
+  
+  // A는 항상 안전
+  if (cardValue === 1) return true
+  
+  // 반대 색의 최소 Foundation 높이 확인
+  const isCardRed = isRed(card.suit)
+  const oppositeColorMinHeight = Math.min(
+    ...Object.entries(state.foundations)
+      .filter(([suit]) => isRed(suit as Suit) !== isCardRed)
+      .map(([_, cards]) => cards.length)
+  )
+  
+  // 반대 색 카드가 cardValue - 1 이상 올라가 있어야 안전
+  return oppositeColorMinHeight >= cardValue - 1
+}
+
+// 자동으로 Foundation에 올릴 수 있는 카드 찾기 및 이동
+export const autoMoveToFoundations = (state: GameState): GameState => {
+  let modified = true
+  const result = structuredClone(state)
+  
+  while (modified) {
+    modified = false
+    
+    // 각 컬럼의 맨 위 카드 확인
+    for (let colIdx = 0; colIdx < result.columns.length; colIdx++) {
+      const col = result.columns[colIdx]
+      if (col.length === 0) continue
+      
+      const card = col[col.length - 1]
+      
+      // Foundation에 올릴 수 있고 안전한지 확인
+      if (
+        canPlaceOnFoundation(card, result.foundations[card.suit]) &&
+        canAutoMoveToFoundation(card, result)
+      ) {
+        result.foundations[card.suit].push(card)
+        col.pop()
+        modified = true
+        break
+      }
+    }
+    
+    if (modified) continue
+    
+    // FreeCell의 카드 확인
+    for (let fcIdx = 0; fcIdx < result.freeCells.length; fcIdx++) {
+      const card = result.freeCells[fcIdx]
+      if (!card) continue
+      
+      // Foundation에 올릴 수 있고 안전한지 확인
+      if (
+        canPlaceOnFoundation(card, result.foundations[card.suit]) &&
+        canAutoMoveToFoundation(card, result)
+      ) {
+        result.foundations[card.suit].push(card)
+        result.freeCells[fcIdx] = null
+        modified = true
+        break
+      }
+    }
+  }
+  
+  return result
+}
+
 export const isSameLocation = (a: Location | null, b: Location): boolean => {
   if (!a) return false
   if (a.type !== b.type) return false
