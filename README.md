@@ -24,10 +24,21 @@
 ---
 
 ## 📸 실제 플레이 화면
-> (여기에 직접 찍은 인게임/랭킹 화면 사진을 올리세요)
+
+| 메인 화면 | 게임 플레이 | 플레이 화면 2 |
+| :---: | :---: | :---: |
+| <img width="200" alt="Image" src="https://github.com/user-attachments/assets/5de6ec2a-0640-4b5a-8205-14df2d8a5312" /> | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/4b213796-4123-4bdd-85ad-61273c0d43f1" /> | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/585c7b66-1451-4a7c-a30e-8a82c191c1d2" /> |
+
+| 카드 배치 | 인게임 UI | 전체 화면 |
+| :---: | :---: | :---: |
+| <img width="200" alt="Image" src="https://github.com/user-attachments/assets/7eba5233-6bd5-4248-965f-18d58d5ced53" /> | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/a666b7ad-1ee4-42ee-8d09-a38a77ea5a9f" /> | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/0c130193-ec54-45f5-b7e5-44c8289e516e" /> |
+
+| 랭킹 시스템 | 결과 화면 |
+| :---: | :---: |
+| <img width="200" alt="Image" src="https://github.com/user-attachments/assets/a2a7960c-c6ca-46eb-a364-2b4726e57b7b" /> | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/5bf48342-4ccd-40db-8d65-a24dfcb0837f" /> |
 
 ## 🎞️ 플레이 움짤/영상
-> (속도감 느껴지는 클리어 장면 하나 올려두면 반응 좋습니다)
+> 없습니다. ㅜ.ㅜ
 
 ---
 
