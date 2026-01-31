@@ -38,7 +38,7 @@
 | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/a2a7960c-c6ca-46eb-a364-2b4726e57b7b" /> | <img width="200" alt="Image" src="https://github.com/user-attachments/assets/5bf48342-4ccd-40db-8d65-a24dfcb0837f" /> |
 
 ## 🎞️ 플레이 움짤/영상
-> 없습니다. ㅜ.ㅜ
+> 같이 해줄 사람이 없습니다. ㅜ.ㅜ
 
 ---
 

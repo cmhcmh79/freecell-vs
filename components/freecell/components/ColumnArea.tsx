@@ -29,11 +29,8 @@ export const ColumnArea: React.FC<ColumnAreaProps> = ({
             col.map((card, cardIdx) => (
               <div
                 key={cardIdx}
-                onClick={() =>
-                  cardIdx === col.length - 1 &&
-                  onClick({ type: 'column', index: colIdx })
-                }
-                className={`relative w-full h-0 pb-[133.33%] ${
+                onClick={() => onClick({ type: 'column', index: colIdx })}
+                className={`relative w-full h-0 pb-[133.33%] cursor-pointer ${
                   cardIdx !== 0 ? '-mt-[109%]' : ''
                 } ${
                   isSameLocation(selected, {
