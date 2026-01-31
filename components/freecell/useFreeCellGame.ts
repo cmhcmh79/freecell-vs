@@ -87,31 +87,42 @@ export const useFreeCellGame = ({
       const fromCol = next.columns[from.index]
       const toCol = next.columns[to.index]
       
+      debugLogger.log(`컬럼 ${from.index} → 컬럼 ${to.index}`)
+      debugLogger.log(`출발 컬럼 카드 수: ${fromCol.length}, 도착 컬럼 카드 수: ${toCol.length}`)
+      
       // 이동 가능한 연속된 카드 시퀀스 찾기
-      const sequence = getMovableSequence(fromCol)
+      const fullSequence = getMovableSequence(fromCol)
+      
+      debugLogger.log(`전체 시퀀스: ${fullSequence.map(c => c.value + c.suit).join(', ')}`)
       
       // 최대 이동 가능한 카드 수 확인
       const maxMovable = getMaxMovableCards(next, to.index)
       
-      // 시퀀스가 최대 이동 가능 수보다 크면 실패
-      if (sequence.length > maxMovable) {
-        debugLogger.log(`슈퍼무브 실패: ${sequence.length}장 이동 시도, 최대 ${maxMovable}장 가능`)
-        setHistory(prev => prev.slice(0, -1))
-        return
-      }
+      debugLogger.log(`전체 시퀀스 ${fullSequence.length}장, 최대 ${maxMovable}장 가능`)
+      
+      // 이동 가능한 만큼만 시퀀스를 자름
+      // 시퀀스의 뒤쪽(맨 아래)부터 maxMovable 개수만큼 가져옴
+      const sequence = fullSequence.slice(-maxMovable)
+      
+      debugLogger.log(`실제 이동할 시퀀스: ${sequence.map(c => c.value + c.suit).join(', ')}`)
       
       // 시퀀스의 맨 위 카드가 목적지에 놓일 수 있는지 확인
       const topCard = sequence[0]
-      if (canPlaceOnColumn(topCard, toCol)) {
+      const canPlace = canPlaceOnColumn(topCard, toCol)
+      debugLogger.log(`카드 배치 가능 여부: ${canPlace}, 카드: ${topCard.value}${topCard.suit}, 목적지 길이: ${toCol.length}`)
+      
+      if (canPlace) {
         // 시퀀스 전체를 목적지로 이동
         sequence.forEach(card => toCol.push(card))
         // 원래 컬럼에서 시퀀스 제거
         fromCol.splice(fromCol.length - sequence.length, sequence.length)
         ok = true
         
-        if (sequence.length > 1) {
-          debugLogger.log(`슈퍼무브 성공: ${sequence.length}장 이동`)
-        }
+        debugLogger.log(`이동 성공: ${sequence.length}장 이동`)
+      } else {
+        debugLogger.log(`슈퍼무브 실패: 카드 배치 불가`)
+        setHistory(prev => prev.slice(0, -1))
+        return
       }
     }
     // 프리셀 → 컬럼
@@ -157,10 +168,9 @@ export const useFreeCellGame = ({
     }
 
     next.moves++
-
+    
     // 자동으로 Foundation에 올릴 수 있는 카드들 이동
     const afterAuto = autoMoveToFoundations(next)
-
     setMyGame(afterAuto)
 
     await broadcast(afterAuto)
@@ -176,9 +186,6 @@ export const useFreeCellGame = ({
       setSelected(null)
     }
   }, [selected, makeMove])
-
-
-
 
   // 자동 승리
   const autoWin = useCallback(async () => {
