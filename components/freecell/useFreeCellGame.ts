@@ -101,29 +101,35 @@ export const useFreeCellGame = ({
       debugLogger.log(`전체 시퀀스 ${fullSequence.length}장, 최대 ${maxMovable}장 가능`)
       
       // 이동 가능한 만큼만 시퀀스를 자름
-      // 시퀀스의 뒤쪽(맨 아래)부터 maxMovable 개수만큼 가져옴
-      const sequence = fullSequence.slice(-maxMovable)
+      let candidateSequence = fullSequence.slice(-maxMovable)
       
-      debugLogger.log(`실제 이동할 시퀀스: ${sequence.map(c => c.value + c.suit).join(', ')}`)
-      
-      // 시퀀스의 맨 위 카드가 목적지에 놓일 수 있는지 확인
-      const topCard = sequence[0]
-      const canPlace = canPlaceOnColumn(topCard, toCol)
-      debugLogger.log(`카드 배치 가능 여부: ${canPlace}, 카드: ${topCard.value}${topCard.suit}, 목적지 길이: ${toCol.length}`)
-      
-      if (canPlace) {
-        // 시퀀스 전체를 목적지로 이동
-        sequence.forEach(card => toCol.push(card))
-        // 원래 컬럼에서 시퀀스 제거
-        fromCol.splice(fromCol.length - sequence.length, sequence.length)
-        ok = true
+      // 시퀀스 중에서 실제로 배치 가능한 부분 찾기
+      let sequence: Card[] = []
+      for (let i = 0; i < candidateSequence.length; i++) {
+        const testSequence = candidateSequence.slice(i)
+        const topCard = testSequence[0]
         
-        debugLogger.log(`이동 성공: ${sequence.length}장 이동`)
-      } else {
-        debugLogger.log(`슈퍼무브 실패: 카드 배치 불가`)
+        if (canPlaceOnColumn(topCard, toCol)) {
+          sequence = testSequence
+          break
+        }
+      }
+      
+      if (sequence.length === 0) {
+        debugLogger.log(`슈퍼무브 실패: 배치 가능한 카드 없음`)
         setHistory(prev => prev.slice(0, -1))
         return
       }
+      
+      debugLogger.log(`실제 이동할 시퀀스: ${sequence.map(c => c.value + c.suit).join(', ')}`)
+      
+      // 시퀀스 전체를 목적지로 이동
+      sequence.forEach(card => toCol.push(card))
+      // 원래 컬럼에서 시퀀스 제거
+      fromCol.splice(fromCol.length - sequence.length, sequence.length)
+      ok = true
+      
+      debugLogger.log(`이동 성공: ${sequence.length}장 이동`)
     }
     // 프리셀 → 컬럼
     else if (from.type === 'freeCell' && to.type === 'column') {
